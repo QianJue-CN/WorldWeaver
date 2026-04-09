@@ -14,6 +14,7 @@ packages/
   contracts/ Shared Zod schemas and response envelopes
 docs/
   architecture.md
+  development-roadmap.md
 ```
 
 ## Quick Start
@@ -34,20 +35,27 @@ For local development, `apps/web`, `apps/api`, and `apps/worker` all read the re
 
 - A monorepo aligned to the documented service boundaries
 - Shared contracts for the first MVP API surface
-- Fastify placeholder routes for world, session, and chat flows
+- A stateful Fastify local MVP backend with persisted draft, world, session, and chat flow records
+- Player-scoped provider settings APIs and UI for OpenAI-compatible, Gemini, and Anthropic-style services
+- Real provider adapters for text generation plus embedding generation for OpenAI-compatible and Gemini services
+- Local vector persistence and similarity retrieval used during chat generation
 - A Next.js landing shell that reflects the current platform plan
 - A worker bootstrap that lists the async jobs planned by the product document
+- API service and repository layers that keep lifecycle logic out of route handlers
+- Automated API service tests covering local persistence and missing-entity failures
 
 ## What Is Intentionally Missing
 
 - Real PostgreSQL, Redis, or Qdrant clients
-- Provider adapters for LLM, search, or embeddings
-- Persistent world/session storage
+- Search-provider integration
 - Background queue orchestration
+- Real worker-side embedding sync execution and retry orchestration
 
 ## Next Recommended Steps
 
-1. Add persistence modules for worlds, sessions, memories, and outbox jobs.
-2. Introduce a repository or service layer inside `apps/api`.
-3. Wire the worker to Redis-backed queues and real job handlers.
-4. Replace placeholder UI cards with the actual world builder, chat, and memory manager flows.
+1. Replace the JSON-backed local repository with PostgreSQL-backed persistence for worlds, sessions, memories, and outbox jobs.
+2. Move embedding generation and retry handling from API-side best effort into the worker queue.
+3. Add memory CRUD and retrieval endpoints on top of the persisted lifecycle data.
+4. Expand the settings UI to support search providers, richer validation, and secret management.
+
+For a more explicit follow-up backlog and phased development plan, see [docs/development-roadmap.md](./docs/development-roadmap.md).

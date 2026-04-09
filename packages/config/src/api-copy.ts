@@ -25,6 +25,11 @@ type ApiScaffoldCopy = {
   }
   chat: {
     assistantMessage: string
+    statefulReply: {
+      sessionContext: string
+      playerMove: string
+      persistence: string
+    }
   }
 }
 
@@ -63,6 +68,13 @@ const apiScaffoldCopyByLocale = {
     chat: {
       assistantMessage:
         "Scaffold reply: the memory engine, retrieval layer, and model adapter will attach here next.",
+      statefulReply: {
+        sessionContext:
+          'Session "{sessionTitle}" in {worldName} ({worldTheme}) now holds {turnCount} recorded turn(s).',
+        playerMove: "Latest player move: {userMessage}",
+        persistence:
+          "The local persistence layer stored this turn while memory jobs remain queued for future worker wiring.",
+      },
     },
   },
   "zh-CN": {
@@ -91,6 +103,13 @@ const apiScaffoldCopyByLocale = {
     chat: {
       assistantMessage:
         "脚手架回复：下一步会把记忆引擎、检索层和模型适配器真正接到这里。",
+      statefulReply: {
+        sessionContext:
+          "会话「{sessionTitle}」位于世界《{worldName}》（{worldTheme}），当前已记录 {turnCount} 轮对话。",
+        playerMove: "最新玩家行动：{userMessage}",
+        persistence:
+          "本地持久化层已保存这一轮，对应记忆任务仍以排队占位形式保留。",
+      },
     },
   },
 } as const satisfies Record<AppLocale, ApiScaffoldCopy>

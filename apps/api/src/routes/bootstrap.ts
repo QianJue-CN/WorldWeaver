@@ -11,6 +11,7 @@ import {
 import type { FastifyPluginAsync } from "fastify"
 import { getRequestLocale } from "../lib/locale.js"
 import { success } from "../lib/response.js"
+import { providerRegistry } from "../lib/services.js"
 import { parseQuery } from "../lib/validation.js"
 
 export const bootstrapRoutes: FastifyPluginAsync = async (app) => {
@@ -31,6 +32,7 @@ export const bootstrapRoutes: FastifyPluginAsync = async (app) => {
     const data = bootstrapCatalogResponseSchema.parse({
       ...getBootstrapSummary(locale),
       api_routes: getApiRouteCatalog(locale),
+      provider_configs: providerRegistry.listSystemProviderDescriptors(locale),
       worker_jobs: getWorkerJobCatalog(locale),
     })
 

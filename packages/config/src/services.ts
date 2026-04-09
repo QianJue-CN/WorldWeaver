@@ -45,10 +45,10 @@ const bootstrapSummaryByLocale = {
         id: "api",
         title: "JSON API and orchestration layer",
         summary:
-          "Fastify service that owns validation, request envelopes, and future provider orchestration.",
+          "Fastify service that owns validation, request envelopes, provider routing, and local retrieval orchestration.",
         responsibilities: [
           "Validate and route HTTP requests",
-          "Coordinate draft, session, and chat flows",
+          "Coordinate draft, session, chat, and provider settings flows",
           "Own contracts shared with the frontend and worker",
         ],
       },
@@ -69,15 +69,22 @@ const bootstrapSummaryByLocale = {
         id: "world-draft-flow",
         title: "World draft generation and refinement",
         summary:
-          "Scaffold API contracts for generate and refine flows before real provider integration.",
-        stage: "foundation",
+          "Provider-backed draft generation and refinement across configurable AI services.",
+        stage: "mvp",
+      },
+      {
+        id: "provider-settings",
+        title: "Player provider settings",
+        summary:
+          "Allow players to save and switch OpenAI-compatible, Gemini, and Anthropic-style provider services.",
+        stage: "mvp",
       },
       {
         id: "world-commit-flow",
         title: "World commit to processing pipeline",
         summary:
-          "Reserve the HTTP and worker boundaries for extraction and embedding sync.",
-        stage: "foundation",
+          "Persist local embeddings today while keeping room for future worker-side sync.",
+        stage: "mvp",
       },
       {
         id: "session-chat-flow",
@@ -131,10 +138,10 @@ const bootstrapSummaryByLocale = {
         id: "api",
         title: "JSON API 与编排层",
         summary:
-          "由 Fastify 提供的服务，负责校验、请求 envelope，以及未来的 provider 编排。",
+          "由 Fastify 提供的服务，负责校验、请求 envelope、provider 路由与本地检索编排。",
         responsibilities: [
           "校验并路由 HTTP 请求",
-          "协调草稿、会话与聊天流程",
+          "协调草稿、会话、聊天与 provider 设置流程",
           "维护前端与 worker 共享的合同",
         ],
       },
@@ -153,14 +160,22 @@ const bootstrapSummaryByLocale = {
       {
         id: "world-draft-flow",
         title: "世界草稿生成与细化",
-        summary: "在真实 provider 接入前，先锁定生成与细化流程的 API 合同。",
-        stage: "foundation",
+        summary: "通过可配置 AI provider 真正驱动世界草稿生成与细化。",
+        stage: "mvp",
+      },
+      {
+        id: "provider-settings",
+        title: "玩家 Provider 设置",
+        summary:
+          "允许玩家保存并切换 OpenAI 兼容、Gemini 与 Anthropic 风格的 provider 服务。",
+        stage: "mvp",
       },
       {
         id: "world-commit-flow",
         title: "世界提交进入处理管线",
-        summary: "预留抽取与 embedding 同步所需的 HTTP 与 worker 边界。",
-        stage: "foundation",
+        summary:
+          "当前先把 embedding 本地持久化，并为未来 worker 同步预留边界。",
+        stage: "mvp",
       },
       {
         id: "session-chat-flow",

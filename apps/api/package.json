@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "lint": "biome check src package.json tsconfig.json",
     "start": "node dist/server.js",
+    "test": "node --import tsx --test src/**/*.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

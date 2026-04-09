@@ -16,6 +16,12 @@ pnpm typecheck
 pnpm build
 ```
 
+For the current stateful local API slice, also run:
+
+```bash
+pnpm --filter @worldweaver/api test
+```
+
 ---
 
 ## Forbidden Patterns
@@ -87,6 +93,7 @@ Routes should parse placeholder or real response payloads against the matching s
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm build`
+- `pnpm --filter @worldweaver/api test`
 
 ### When New Backend Behavior Is Added
 
@@ -105,6 +112,8 @@ At that point, test at least:
 - startup config parsing
 - cross-layer identifier consistency such as `queued_jobs`
 
+The current local JSON-backed repository, provider registry, protocol adapters, provider settings service, and `MvpService` all meet that threshold, so backend work in this area should extend the existing API tests instead of relying on manual checks only.
+
 ---
 
 ## Code Review Checklist
@@ -112,6 +121,8 @@ At that point, test at least:
 - Does the change update `packages/contracts` first when payloads changed?
 - Does it update `packages/config` when shared defaults or job ids changed?
 - Are route responses wrapped in the standard envelope?
+- Do missing-entity cases return the shared failure envelope instead of fake placeholder success?
+- Do provider failures return explicit contract-aligned errors instead of silent scaffold fallbacks?
 - Are env keys parsed once in `env.ts`?
-- Did the author run `pnpm lint`, `pnpm typecheck`, and `pnpm build`?
+- Did the author run `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `pnpm --filter @worldweaver/api test`?
 - If a contract changed, was `http-contracts.md` updated too?

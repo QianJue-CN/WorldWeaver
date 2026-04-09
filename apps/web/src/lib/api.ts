@@ -19,16 +19,25 @@ import {
   createApiEnvelopeSchema,
   createSessionRequestSchema,
   createSessionResponseSchema,
+  type DeleteProviderConfigResponse,
   type DraftGenerateRequest,
   type DraftGenerateResponse,
   type DraftRefineRequest,
   type DraftRefineResponse,
+  deleteProviderConfigResponseSchema,
   draftGenerateRequestSchema,
   draftGenerateResponseSchema,
   draftRefineRequestSchema,
   draftRefineResponseSchema,
   type HealthResponse,
   healthResponseSchema,
+  type ProviderConfigListResponse,
+  providerConfigListQuerySchema,
+  providerConfigListResponseSchema,
+  type SavedProviderConfig,
+  savedProviderConfigSchema,
+  type UpsertProviderConfigRequest,
+  upsertProviderConfigRequestSchema,
 } from "@worldweaver/contracts"
 
 type ApiRequestOptions = {
@@ -284,6 +293,65 @@ export async function sendChat(
       body: JSON.stringify(chatSendRequestSchema.parse(input)),
     },
     (payload) => createApiEnvelopeSchema(chatSendResponseSchema).parse(payload),
+    options,
+  )
+}
+
+export async function getProviderConfigs(
+  ownerId: string,
+  options: ApiRequestOptions = {},
+) {
+  const query = providerConfigListQuerySchema.parse({
+    owner_id: ownerId,
+  })
+  const searchParams = new URLSearchParams(query)
+
+  return requestEnvelope<ProviderConfigListResponse>(
+    `/api/provider-configs?${searchParams.toString()}`,
+    {
+      method: "GET",
+    },
+    (payload) =>
+      createApiEnvelopeSchema(providerConfigListResponseSchema).parse(payload),
+    options,
+  )
+}
+
+export async function saveProviderConfig(
+  input: UpsertProviderConfigRequest,
+  options: ApiRequestOptions = {},
+) {
+  return requestEnvelope<SavedProviderConfig>(
+    "/api/provider-configs",
+    {
+      method: "POST",
+      body: JSON.stringify(upsertProviderConfigRequestSchema.parse(input)),
+    },
+    (payload) =>
+      createApiEnvelopeSchema(savedProviderConfigSchema).parse(payload),
+    options,
+  )
+}
+
+export async function deleteProviderConfig(
+  providerConfigId: string,
+  ownerId: string,
+  options: ApiRequestOptions = {},
+) {
+  const query = providerConfigListQuerySchema.parse({
+    owner_id: ownerId,
+  })
+  const searchParams = new URLSearchParams(query)
+
+  return requestEnvelope<DeleteProviderConfigResponse>(
+    `/api/provider-configs/${providerConfigId}?${searchParams.toString()}`,
+    {
+      method: "DELETE",
+    },
+    (payload) =>
+      createApiEnvelopeSchema(deleteProviderConfigResponseSchema).parse(
+        payload,
+      ),
     options,
   )
 }

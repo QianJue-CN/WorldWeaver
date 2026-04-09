@@ -1,0 +1,4 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check-backend/SKILL.md", "reason": "Backend check spec"}
+{"file": ".trellis/spec/backend/http-contracts.md", "reason": "Validate route and contract alignment after implementation"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Validate verification gate and backend quality rules"}

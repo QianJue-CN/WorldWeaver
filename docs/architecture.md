@@ -11,7 +11,7 @@ This scaffold follows the boundaries from `WordWeaverRPG开发文档.md`:
 ## Shared Packages
 
 - `@worldweaver/contracts`: request and response schemas shared across web, api, and worker
-- `@worldweaver/config`: service catalog, API route catalog, and worker job definitions
+- `@worldweaver/config`: service catalog, API route catalog, worker job definitions, and provider metadata
 
 ## Current API Surface
 
@@ -23,4 +23,18 @@ This scaffold follows the boundaries from `WordWeaverRPG开发文档.md`:
 - `POST /api/sessions`
 - `POST /api/chat/send`
 
-All write endpoints are scaffold placeholders that validate input and return deterministic demo payloads. They exist to lock the initial contract surface before persistence and provider integrations are added.
+The write endpoints now run through an API-local repository and service layer. For local development they persist draft, world, session, and chat state into a repo-local JSON store, validate referenced ids, and return deterministic but context-aware payloads. They still stop short of real PostgreSQL, Redis, Qdrant, or provider integrations.
+
+Additional runtime surfaces now exist for player-scoped provider settings:
+
+- `GET /api/provider-configs`
+- `POST /api/provider-configs`
+- `DELETE /api/provider-configs/:providerConfigId`
+
+The API now supports these provider protocol families:
+
+- OpenAI-compatible chat completions and embeddings
+- Gemini `generateContent` and `embedContent`
+- Anthropic `messages` for text generation
+
+Embeddings are persisted locally today and used for similarity-based prompt retrieval inside the API service. Real Qdrant sync is still a future worker concern.

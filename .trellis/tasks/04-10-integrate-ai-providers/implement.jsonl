@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/http-contracts.md", "reason": "Provider, env, and cross-layer contract changes"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Placement of provider clients, registries, and services"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Provider and credential failure handling"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Provider-related logging and secret safety"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verification requirements for provider-backed behavior"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer provider and embedding data flow"}

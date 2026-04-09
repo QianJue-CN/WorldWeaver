@@ -1,4 +1,5 @@
 import { type AppLocale, defaultLocale } from "./i18n.js"
+import { mockLocalProviderConfigId } from "./providers.js"
 
 type AsyncStatusCopy = {
   idle: string
@@ -90,6 +91,48 @@ export type WorldWeaverWebCopy = {
   controlCenter: {
     statusLabels: AsyncStatusCopy
     serverStatusLabels: LocalizedStatusCopy
+    providers: {
+      eyebrow: string
+      title: string
+      copy: string
+      labels: {
+        settingsOwner: string
+        activeProvider: string
+        providerLabel: string
+        providerFormat: string
+        apiBaseUrl: string
+        apiKey: string
+        textModel: string
+        embeddingModel: string
+        capabilities: string
+        status: string
+        setAsDefault: string
+      }
+      formatOptions: {
+        openai: string
+        gemini: string
+        anthropic: string
+      }
+      buttons: {
+        refresh: string
+        save: string
+        clear: string
+        edit: string
+        use: string
+        delete: string
+      }
+      fallback: {
+        idle: string
+        emptyList: string
+        activeProvider: string
+        embeddingUnavailable: string
+      }
+      messages: {
+        loading: string
+        saved: string
+        deleted: string
+      }
+    }
     health: {
       eyebrow: string
       title: string
@@ -312,6 +355,49 @@ export const webConsoleCopyByLocale = {
         ended: "Ended",
         archived: "Archived",
       },
+      providers: {
+        eyebrow: "Settings",
+        title: "Provider settings",
+        copy: "Save player-scoped AI provider services here, then reuse them across draft generation, chat, and embeddings.",
+        labels: {
+          settingsOwner: "Settings owner",
+          activeProvider: "Active provider",
+          providerLabel: "Provider label",
+          providerFormat: "Format",
+          apiBaseUrl: "API base URL",
+          apiKey: "API key",
+          textModel: "Text model",
+          embeddingModel: "Embedding model",
+          capabilities: "Capabilities",
+          status: "Status",
+          setAsDefault: "Set as player default",
+        },
+        formatOptions: {
+          openai: "OpenAI-compatible",
+          gemini: "Gemini",
+          anthropic: "Anthropic",
+        },
+        buttons: {
+          refresh: "Refresh providers",
+          save: "Save provider",
+          clear: "Clear form",
+          edit: "Edit",
+          use: "Use now",
+          delete: "Delete",
+        },
+        fallback: {
+          idle: "Load the current player's provider settings.",
+          emptyList:
+            "No player-scoped providers yet. Save one below or keep using the built-in mock provider.",
+          activeProvider: "No active provider selected",
+          embeddingUnavailable: "Embedding disabled",
+        },
+        messages: {
+          loading: "Loading player provider settings...",
+          saved: "Provider settings saved. Request {requestId}.",
+          deleted: "Provider removed. Request {requestId}.",
+        },
+      },
       health: {
         eyebrow: "Runtime Link",
         title: "API handshake",
@@ -453,7 +539,7 @@ export const webConsoleCopyByLocale = {
         },
       },
       defaults: {
-        providerConfigId: "cfg_openai_default",
+        providerConfigId: mockLocalProviderConfigId,
         basePrompt:
           "Build a rain-soaked gothic megacity where vampire houses control trade routes, debt, and ancient weather engines.",
         refineFeedback:
@@ -541,6 +627,49 @@ export const webConsoleCopyByLocale = {
         paused: "暂停",
         ended: "结束",
         archived: "归档",
+      },
+      providers: {
+        eyebrow: "设置",
+        title: "Provider 设置",
+        copy: "把玩家作用域的 AI provider 服务保存在这里，然后在草稿生成、聊天和 embedding 流程中复用。",
+        labels: {
+          settingsOwner: "设置所属玩家",
+          activeProvider: "当前 Provider",
+          providerLabel: "Provider 名称",
+          providerFormat: "格式",
+          apiBaseUrl: "API 基址",
+          apiKey: "API Key",
+          textModel: "文本模型",
+          embeddingModel: "向量模型",
+          capabilities: "能力",
+          status: "状态",
+          setAsDefault: "设为玩家默认 Provider",
+        },
+        formatOptions: {
+          openai: "OpenAI 兼容",
+          gemini: "Gemini",
+          anthropic: "Anthropic",
+        },
+        buttons: {
+          refresh: "刷新 Provider",
+          save: "保存 Provider",
+          clear: "清空表单",
+          edit: "编辑",
+          use: "立即使用",
+          delete: "删除",
+        },
+        fallback: {
+          idle: "加载当前玩家的 provider 设置。",
+          emptyList:
+            "当前还没有玩家作用域的 provider。可以先在下方保存一个，或继续使用内置 mock provider。",
+          activeProvider: "当前没有激活的 provider",
+          embeddingUnavailable: "未启用向量模型",
+        },
+        messages: {
+          loading: "正在加载玩家的 provider 设置...",
+          saved: "Provider 设置已保存。请求 {requestId}。",
+          deleted: "Provider 已删除。请求 {requestId}。",
+        },
       },
       health: {
         eyebrow: "运行链路",
@@ -679,7 +808,7 @@ export const webConsoleCopyByLocale = {
         },
       },
       defaults: {
-        providerConfigId: "cfg_openai_default",
+        providerConfigId: mockLocalProviderConfigId,
         basePrompt:
           "构建一座被暴雨浸透的哥特巨型都市，让吸血鬼家族掌控贸易航线、债务与古老天气引擎。",
         refineFeedback:

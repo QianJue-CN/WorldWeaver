@@ -5,7 +5,9 @@
       "**",
       "!**/.git",
       "!**/.next",
+      "!**/.tmp",
       "!**/.trellis",
+      "!apps/web/next-env.d.ts",
       "!**/dist",
       "!**/node_modules"
     ]

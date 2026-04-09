@@ -68,6 +68,7 @@ Current example:
 - `apps/web/src/components/worldweaver-home.tsx` builds a fallback catalog from `getBootstrapSummary(locale)`, `getApiRouteCatalog(locale)`, and `getWorkerJobCatalog(locale)`
 - `apps/web/src/lib/api.ts` fetches `/api/bootstrap?locale=...`
 - the response is parsed with `bootstrapCatalogResponseSchema`
+- provider settings calls in `apps/web/src/lib/api.ts` parse `providerConfigListResponseSchema`, `savedProviderConfigSchema`, and `deleteProviderConfigResponseSchema`
 
 That is the preferred pattern for any cross-layer display data that has both a local fallback and a runtime API source.
 
@@ -118,6 +119,7 @@ import { bootstrapSummary } from "../../../packages/config/src/services"
 
 - import shared metadata from `@worldweaver/config`
 - parse `/api/bootstrap` through `bootstrapCatalogResponseSchema` before rendering
+- parse provider settings CRUD responses through shared schemas before mutating UI state
 - reuse shared contract types when building future API clients
 
 ### Base

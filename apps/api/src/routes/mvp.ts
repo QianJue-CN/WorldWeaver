@@ -12,20 +12,11 @@ import {
   draftRefineResponseSchema,
 } from "@worldweaver/contracts"
 import type { FastifyPluginAsync } from "fastify"
+import { ApiRouteError } from "../lib/api-error.js"
 import { getRequestLocale } from "../lib/locale.js"
-import { success } from "../lib/response.js"
+import { failure, success } from "../lib/response.js"
+import { mvpService } from "../lib/services.js"
 import { parseBody } from "../lib/validation.js"
-
-function slugify(value: string) {
-  const normalized = value
-    .normalize("NFKC")
-    .toLowerCase()
-    .trim()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, "_")
-    .replace(/^_+|_+$/g, "")
-
-  return normalized || crypto.randomUUID().slice(0, 8)
-}
 
 export const mvpRoutes: FastifyPluginAsync = async (app) => {
   app.post("/worlds/drafts/generate", async (request, reply) => {
@@ -42,17 +33,23 @@ export const mvpRoutes: FastifyPluginAsync = async (app) => {
       return
     }
 
-    const data = draftGenerateResponseSchema.parse({
-      draft_id: `draft_${slugify(body.base_prompt).slice(0, 24)}`,
-      draft_text: `${copy.draftGenerate.draftTextPrefix}: ${body.base_prompt}`,
-      outline: copy.draftGenerate.outline,
-      reference_notes: body.enable_search
-        ? [copy.draftGenerate.referenceNotes.searchEnabled]
-        : [copy.draftGenerate.referenceNotes.localOnly],
-      status: "draft",
-    })
+    try {
+      const data = draftGenerateResponseSchema.parse(
+        await mvpService.generateDraft(body, locale),
+      )
 
-    return success(data, request.id, copy.envelopeMessages.scaffolded)
+      return success(data, request.id, copy.envelopeMessages.scaffolded)
+    } catch (error) {
+      if (error instanceof ApiRouteError) {
+        return reply
+          .status(error.statusCode)
+          .send(
+            failure(error.statusCode, error.code, request.id, error.details),
+          )
+      }
+
+      throw error
+    }
   })
 
   app.post("/worlds/drafts/refine", async (request, reply) => {
@@ -69,15 +66,23 @@ export const mvpRoutes: FastifyPluginAsync = async (app) => {
       return
     }
 
-    const data = draftRefineResponseSchema.parse({
-      draft_id: body.draft_id,
-      draft_text: `${copy.draftRefine.draftTextPrefix} ${body.draft_id}: ${body.user_feedback}`,
-      outline: copy.draftRefine.outline,
-      reference_notes: copy.draftRefine.referenceNotes,
-      status: "draft",
-    })
+    try {
+      const data = draftRefineResponseSchema.parse(
+        await mvpService.refineDraft(body, locale),
+      )
 
-    return success(data, request.id, copy.envelopeMessages.scaffolded)
+      return success(data, request.id, copy.envelopeMessages.scaffolded)
+    } catch (error) {
+      if (error instanceof ApiRouteError) {
+        return reply
+          .status(error.statusCode)
+          .send(
+            failure(error.statusCode, error.code, request.id, error.details),
+          )
+      }
+
+      throw error
+    }
   })
 
   app.post("/worlds/commit", async (request, reply) => {
@@ -94,13 +99,23 @@ export const mvpRoutes: FastifyPluginAsync = async (app) => {
       return
     }
 
-    const data = commitWorldResponseSchema.parse({
-      world_id: `world_${slugify(body.world_name)}`,
-      status: "processing",
-      queued_jobs: ["draft_commit_extraction", "embedding_sync"],
-    })
+    try {
+      const data = commitWorldResponseSchema.parse(
+        await mvpService.commitWorld(body, locale),
+      )
 
-    return success(data, request.id, copy.envelopeMessages.queued)
+      return success(data, request.id, copy.envelopeMessages.queued)
+    } catch (error) {
+      if (error instanceof ApiRouteError) {
+        return reply
+          .status(error.statusCode)
+          .send(
+            failure(error.statusCode, error.code, request.id, error.details),
+          )
+      }
+
+      throw error
+    }
   })
 
   app.post("/sessions", async (request, reply) => {
@@ -117,14 +132,23 @@ export const mvpRoutes: FastifyPluginAsync = async (app) => {
       return
     }
 
-    const data = createSessionResponseSchema.parse({
-      session_id: `session_${crypto.randomUUID().slice(0, 8)}`,
-      world_id: body.world_id,
-      title: body.title ?? copy.session.defaultTitle,
-      status: "active",
-    })
+    try {
+      const data = createSessionResponseSchema.parse(
+        await mvpService.createSession(body, locale),
+      )
 
-    return success(data, request.id, copy.envelopeMessages.created)
+      return success(data, request.id, copy.envelopeMessages.created)
+    } catch (error) {
+      if (error instanceof ApiRouteError) {
+        return reply
+          .status(error.statusCode)
+          .send(
+            failure(error.statusCode, error.code, request.id, error.details),
+          )
+      }
+
+      throw error
+    }
   })
 
   app.post("/chat/send", async (request, reply) => {
@@ -141,12 +165,22 @@ export const mvpRoutes: FastifyPluginAsync = async (app) => {
       return
     }
 
-    const data = chatSendResponseSchema.parse({
-      session_id: body.session_id,
-      assistant_message: copy.chat.assistantMessage,
-      queued_jobs: ["session_memory_extraction", "session_summary"],
-    })
+    try {
+      const data = chatSendResponseSchema.parse(
+        await mvpService.sendChat(body, locale),
+      )
 
-    return success(data, request.id, copy.envelopeMessages.scaffolded)
+      return success(data, request.id, copy.envelopeMessages.scaffolded)
+    } catch (error) {
+      if (error instanceof ApiRouteError) {
+        return reply
+          .status(error.statusCode)
+          .send(
+            failure(error.statusCode, error.code, request.id, error.details),
+          )
+      }
+
+      throw error
+    }
   })
 }

@@ -100,6 +100,7 @@ When editing UI:
 - confirm no broken shared package imports
 - confirm content still renders without client-side hooks
 - confirm locale switch updates both local fallback copy and `/api/bootstrap` synchronized data
+- confirm provider settings load, save, delete, and "use now" flows work without horizontal overflow on mobile
 
 ### Future Requirement
 
@@ -118,5 +119,6 @@ When client interactions or data fetching are added, introduce UI tests for:
 - Did the change keep App Router conventions intact?
 - Does the page consume shared package data instead of duplicating it?
 - Was `use client` added only when necessary?
+- Do provider settings interactions still parse every server response through shared contracts?
 - Were `pnpm lint`, `pnpm typecheck`, and `pnpm build` run?
 - Was mobile layout checked?

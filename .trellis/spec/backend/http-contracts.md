@@ -38,13 +38,18 @@ The current scaffold keeps cross-layer contracts in `packages/contracts` and sha
 - `packages/config/src/i18n.ts`
 - `packages/config/src/runtime-env.ts`
 - `packages/config/src/jobs.ts`
+- `packages/config/src/providers.ts`
 - `apps/api/src/lib/response.ts`
 - `apps/api/src/lib/locale.ts`
 - `apps/api/src/lib/env.ts`
+- `apps/api/src/lib/services.ts`
 - `apps/api/src/lib/validation.ts`
+- `apps/api/src/ai/*.ts`
 - `apps/api/src/routes/health.ts`
 - `apps/api/src/routes/bootstrap.ts`
 - `apps/api/src/routes/mvp.ts`
+- `apps/api/src/routes/provider-configs.ts`
+- `apps/api/src/services/provider-config-service.ts`
 - `apps/worker/src/env.ts`
 
 #### Commands
@@ -61,6 +66,9 @@ pnpm build
 |-------|------|-------------|
 | `GET` | `/api/health` | `apps/api/src/routes/health.ts` |
 | `GET` | `/api/bootstrap` | `apps/api/src/routes/bootstrap.ts` |
+| `GET` | `/api/provider-configs` | `apps/api/src/routes/provider-configs.ts` |
+| `POST` | `/api/provider-configs` | `apps/api/src/routes/provider-configs.ts` |
+| `DELETE` | `/api/provider-configs/:providerConfigId` | `apps/api/src/routes/provider-configs.ts` |
 | `POST` | `/api/worlds/drafts/generate` | `apps/api/src/routes/mvp.ts` |
 | `POST` | `/api/worlds/drafts/refine` | `apps/api/src/routes/mvp.ts` |
 | `POST` | `/api/worlds/commit` | `apps/api/src/routes/mvp.ts` |
@@ -95,11 +103,28 @@ Validation failures use:
 }
 ```
 
+Service-level missing reference failures use:
+
+```ts
+{
+  code: 404,
+  message: "draft_not_found" | "world_not_found" | "session_not_found",
+  data: {
+    entity: "draft" | "world" | "session",
+    id: string
+  },
+  request_id: string
+}
+```
+
 #### Shared Request and Response Schemas
 
 | Endpoint | Request Source | Response Source |
 |---------|----------------|-----------------|
 | `/api/bootstrap` | `bootstrapCatalogQuerySchema` | `bootstrapCatalogResponseSchema` |
+| `/api/provider-configs` `GET` | `providerConfigListQuerySchema` | `providerConfigListResponseSchema` |
+| `/api/provider-configs` `POST` | `upsertProviderConfigRequestSchema` | `savedProviderConfigSchema` |
+| `/api/provider-configs/:providerConfigId` `DELETE` | `deleteProviderConfigParamsSchema` + `providerConfigListQuerySchema` | `deleteProviderConfigResponseSchema` |
 | `/api/worlds/drafts/generate` | `draftGenerateRequestSchema` | `draftGenerateResponseSchema` |
 | `/api/worlds/drafts/refine` | `draftRefineRequestSchema` | `draftRefineResponseSchema` |
 | `/api/worlds/commit` | `commitWorldRequestSchema` | `commitWorldResponseSchema` |
@@ -140,6 +165,7 @@ These include:
 - refinement placeholder text
 - default localized session title
 - placeholder assistant reply
+ - provider settings panel copy for the web console
 
 The API must not hardcode route-local user-facing scaffold strings directly inside route handlers.
 
@@ -153,6 +179,15 @@ The API must not hardcode route-local user-facing scaffold strings directly insi
 | `POSTGRES_URL` | API and worker env modules | `packages/config/src/env.ts` |
 | `REDIS_URL` | API and worker env modules | `packages/config/src/env.ts` |
 | `QDRANT_URL` | API and worker env modules | `packages/config/src/env.ts` |
+| `OPENAI_API_KEY` | `apps/api/src/lib/env.ts` | environment only |
+| `OPENAI_BASE_URL` | `apps/api/src/lib/env.ts` | `packages/config/src/providers.ts` |
+| `OPENAI_TEXT_MODEL` | `apps/api/src/lib/env.ts` | `packages/config/src/providers.ts` |
+| `OPENAI_EMBEDDING_MODEL` | `apps/api/src/lib/env.ts` | `packages/config/src/providers.ts` |
+| `OPENAI_TIMEOUT_MS` | `apps/api/src/lib/env.ts` | `packages/config/src/providers.ts` |
+| `OPENAI_ORGANIZATION` | `apps/api/src/lib/env.ts` | environment only |
+| `OPENAI_PROJECT` | `apps/api/src/lib/env.ts` | environment only |
+| `OPENAI_EMBEDDING_DIMENSIONS` | `apps/api/src/lib/env.ts` | environment only |
+| `MOCK_EMBEDDING_DIMENSIONS` | `apps/api/src/lib/env.ts` | `packages/config/src/providers.ts` |
 | `WORKER_NAME` | `apps/worker/src/env.ts` | `packages/config/src/env.ts` |
 | `WORKER_HEARTBEAT_MS` | `apps/worker/src/env.ts` | `packages/config/src/env.ts` |
 
@@ -169,12 +204,25 @@ This keeps `pnpm dev:api`, `pnpm dev:worker`, and `pnpm dev:web` aligned on the 
 
 #### Worker Job IDs Returned by API
 
-- `draft_commit_extraction`
-- `embedding_sync`
-- `session_memory_extraction`
-- `session_summary`
+- `worldCommitJobIds`
+  - `draft_commit_extraction`
+  - `embedding_sync`
+- `sessionUpdateJobIds`
+  - `session_memory_extraction`
+  - `session_summary`
 
 These live in `packages/config/src/jobs.ts` and must stay synchronized with any API payload that returns `queued_jobs`.
+
+#### Provider Protocol Families
+
+The API currently supports these runtime protocol families:
+
+- OpenAI-compatible `chat/completions` and `embeddings`
+- Gemini `generateContent` and `embedContent`
+- Anthropic `v1/messages` for text generation
+- Local mock provider for deterministic development and tests
+
+Anthropic is currently text-only in this repository. If embeddings are required for a provider config, the format must be OpenAI-compatible, Gemini, or mock.
 
 ### 4. Validation & Error Matrix
 
@@ -191,7 +239,16 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 | Valid query such as `locale=zh-CN` | `parseQuery()` | Route continues with typed `query` |
 | Invalid query such as `locale=jp` | `parseQuery()` | HTTP `400` with `message: "validation_error"` and flattened `issues` |
 | Invalid request body | `parseBody()` | HTTP `400` with `message: "validation_error"` and flattened `issues` |
+| Valid provider settings query with `owner_id=player_local` | `providerConfigListQuerySchema` | Returns built-in configs plus player-scoped saved configs |
+| Invalid provider config id in generation flow | `ProviderRegistry` | HTTP `400` with `message: "provider_config_not_found"` |
+| Anthropic config requests embeddings | `ProviderRegistry` | HTTP `400` with `message: "provider_capability_unavailable"` |
+| Built-in OpenAI config without key | `ProviderRegistry` | HTTP `503` with `message: "provider_not_configured"` |
+| Upstream provider rejects request | protocol client | HTTP `502` with `message: "provider_request_failed"` |
+| Upstream provider returns malformed body | protocol client or `AiGateway` | HTTP `502` with `message: "provider_response_invalid"` |
 | Missing optional field `title` in session create | `createSessionRequestSchema` + locale-aware copy | Accepted, route uses localized fallback title such as `"New Session"` or `"新会话"` |
+| Unknown `draft_id` on refine or commit | `MvpService` + `ApiRouteError` | HTTP `404` with entity metadata in the failure envelope |
+| Unknown `world_id` on session create | `MvpService` + `ApiRouteError` | HTTP `404` with entity metadata in the failure envelope |
+| Unknown `session_id` on chat send | `MvpService` + `ApiRouteError` | HTTP `404` with entity metadata in the failure envelope |
 | Invalid env type such as non-numeric `API_PORT` | `envSchema.parse(process.env)` | Startup throws before service begins listening |
 | Successful route handler | `success()` helper | HTTP `200` with envelope containing `request_id` |
 | Fastify startup failure | `start()` catch in `server.ts` | `app.log.error(error)` then `process.exit(1)` |
@@ -204,6 +261,10 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 - Resolve request locale once in the route through `getRequestLocale(request, query?.locale)`
 - Parse route query through `parseQuery()` when locale is accepted on query string
 - Parse localized response payload with the matching schema before returning
+- Resolve `provider_config_id` through the provider registry instead of branching directly in services
+- Persist raw provider keys server-side but return masked previews to the UI
+- Keep `queued_jobs` arrays sourced from `worldCommitJobIds` or `sessionUpdateJobIds`
+- Validate referenced entities in the service layer before mutating persisted state
 - Add a new request field in `packages/contracts/src/mvp.ts`
 - Import that schema into `apps/api/src/routes/*.ts`
 - Validate through `parseBody()`
@@ -216,11 +277,16 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 - A scaffold endpoint may return placeholder data
 - Placeholder data may vary by locale
 - Placeholder data must still be parsed by the matching response schema before returning
+- Local development persistence may use an API-local JSON store before PostgreSQL exists
+- Player-scoped provider configs may be stored in the local API state file during local development
 - API and worker may use shared defaults from `packages/config/src/env.ts` when neither `.env.local` nor `.env` provides a key
 
 #### Bad
 
 - Hardcode user-facing scaffold copy directly in `apps/api/src/routes/*.ts`
+- Return success for refine, commit, session, or chat routes without verifying the referenced id exists
+- Put raw provider secrets in frontend-readable responses
+- Hardcode OpenAI, Gemini, or Anthropic HTTP payloads inside routes or domain services
 - Read locale headers ad hoc in each route instead of using `apps/api/src/lib/locale.ts`
 - Accept query input on `/api/bootstrap` without validating it through `bootstrapCatalogQuerySchema`
 - Define route-local payload types in `apps/api/src/routes/*.ts`
@@ -288,6 +354,7 @@ app.get("/bootstrap", async (request, reply) => {
   const data = bootstrapCatalogResponseSchema.parse({
     ...getBootstrapSummary(locale),
     api_routes: getApiRouteCatalog(locale),
+    provider_configs: providerRegistry.listSystemProviderDescriptors(locale),
     worker_jobs: getWorkerJobCatalog(locale),
   })
 
@@ -318,6 +385,34 @@ app.post("/worlds/commit", async (request, reply) => {
   })
 
   return success(data, request.id, copy.envelopeMessages.queued)
+})
+```
+
+```ts
+app.post("/chat/send", async (request, reply) => {
+  const locale = getRequestLocale(request)
+  const copy = getApiScaffoldCopy(locale)
+  const body = parseBody(chatSendRequestSchema, request.body, reply, request.id)
+
+  if (!body) {
+    return
+  }
+
+  try {
+    const data = chatSendResponseSchema.parse(
+      await mvpService.sendChat(body, locale),
+    )
+
+    return success(data, request.id, copy.envelopeMessages.scaffolded)
+  } catch (error) {
+    if (error instanceof ApiRouteError) {
+      return reply
+        .status(error.statusCode)
+        .send(failure(error.statusCode, error.code, request.id, error.details))
+    }
+
+    throw error
+  }
 })
 ```
 

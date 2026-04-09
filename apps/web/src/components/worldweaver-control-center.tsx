@@ -30,6 +30,7 @@ import {
   sendChat,
 } from "../lib/api"
 import { PretextStreamText } from "./pretext-stream-text"
+import { ProviderSettingsCard } from "./provider-settings-card"
 
 type AsyncStatus = "idle" | "loading" | "success" | "error"
 
@@ -646,6 +647,16 @@ export function WorldWeaverControlCenter({
           <p className="helper-copy">{copy.health.helper}</p>
         </div>
       </ActionCard>
+
+      <ProviderSettingsCard
+        copy={copy.providers}
+        locale={locale}
+        onProviderConfigChange={setProviderConfigId}
+        onSessionUserIdChange={setSessionUserId}
+        providerConfigId={providerConfigId}
+        sessionUserId={sessionUserId}
+        statusLabels={copy.statusLabels}
+      />
 
       <ActionCard
         copy={copy.draft.copy}

@@ -4,6 +4,7 @@ import { allowedOrigins, env } from "./lib/env.js"
 import { bootstrapRoutes } from "./routes/bootstrap.js"
 import { healthRoutes } from "./routes/health.js"
 import { mvpRoutes } from "./routes/mvp.js"
+import { providerConfigRoutes } from "./routes/provider-configs.js"
 
 const app = Fastify({
   logger: {
@@ -17,6 +18,7 @@ void app.register(cors, {
 
 void app.register(healthRoutes, { prefix: "/api" })
 void app.register(bootstrapRoutes, { prefix: "/api" })
+void app.register(providerConfigRoutes, { prefix: "/api" })
 void app.register(mvpRoutes, { prefix: "/api" })
 
 async function start() {

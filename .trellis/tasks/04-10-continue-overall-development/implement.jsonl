@@ -1,0 +1,7 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/http-contracts.md", "reason": "HTTP contract and envelope requirements for API behavior"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Current backend module layout and new service layer placement"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Shared backend error envelope and failure patterns"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend verification and testing expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Boundary thinking for repository-service-route flow"}

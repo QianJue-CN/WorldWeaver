@@ -5,6 +5,7 @@ import {
   defaultLocale,
   getApiRouteCatalog,
   getBootstrapSummary,
+  getProviderCatalog,
   getWorkerJobCatalog,
   getWorldWeaverWebCopy,
   localeCatalog,
@@ -29,6 +30,15 @@ function createFallbackBootstrapCatalog(
   return bootstrapCatalogResponseSchema.parse({
     ...bootstrapSummary,
     api_routes: getApiRouteCatalog(locale),
+    provider_configs: getProviderCatalog(locale).map((provider) => ({
+      id: provider.id,
+      provider: provider.provider,
+      label: provider.label,
+      capabilities: [...provider.capabilities],
+      language_model: provider.language_model,
+      embedding_model: provider.embedding_model,
+      status: provider.provider === "mock" ? "mock" : "missing_credentials",
+    })),
     worker_jobs: getWorkerJobCatalog(locale),
   })
 }

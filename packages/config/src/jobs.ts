@@ -7,32 +7,47 @@ type WorkerJobDescriptor = {
 }
 
 type ApiRouteDescriptor = {
-  method: "GET" | "POST"
+  method: "GET" | "POST" | "DELETE"
   path: string
   purpose: string
 }
 
+const draftCommitExtractionJobId = "draft_commit_extraction" as const
+const embeddingSyncJobId = "embedding_sync" as const
+const sessionMemoryExtractionJobId = "session_memory_extraction" as const
+const sessionSummaryJobId = "session_summary" as const
+
+export const worldCommitJobIds = [
+  draftCommitExtractionJobId,
+  embeddingSyncJobId,
+] as const
+
+export const sessionUpdateJobIds = [
+  sessionMemoryExtractionJobId,
+  sessionSummaryJobId,
+] as const
+
 const workerJobCatalogByLocale = {
   en: [
     {
-      id: "draft_commit_extraction",
+      id: draftCommitExtractionJobId,
       trigger: "World commit",
       summary: "Extract structured memory nodes from the final world draft.",
     },
     {
-      id: "embedding_sync",
+      id: embeddingSyncJobId,
       trigger: "Memory node persisted",
       summary:
         "Generate embeddings and upsert the current memory version into Qdrant.",
     },
     {
-      id: "session_memory_extraction",
+      id: sessionMemoryExtractionJobId,
       trigger: "Assistant reply stored",
       summary:
         "Extract long-lived facts, entities, and relation changes from chat history.",
     },
     {
-      id: "session_summary",
+      id: sessionSummaryJobId,
       trigger: "Conversation reaches a checkpoint",
       summary:
         "Generate episodic summaries to keep the prompt compact and coherent.",
@@ -40,22 +55,22 @@ const workerJobCatalogByLocale = {
   ],
   "zh-CN": [
     {
-      id: "draft_commit_extraction",
+      id: draftCommitExtractionJobId,
       trigger: "世界提交",
       summary: "从最终世界草稿中抽取结构化记忆节点。",
     },
     {
-      id: "embedding_sync",
+      id: embeddingSyncJobId,
       trigger: "记忆节点已持久化",
       summary: "生成 embeddings，并把当前记忆版本 upsert 到 Qdrant。",
     },
     {
-      id: "session_memory_extraction",
+      id: sessionMemoryExtractionJobId,
       trigger: "助手回复已存储",
       summary: "从聊天历史中抽取长期事实、实体以及关系变化。",
     },
     {
-      id: "session_summary",
+      id: sessionSummaryJobId,
       trigger: "对话到达检查点",
       summary: "生成分段摘要，让提示词保持紧凑且连贯。",
     },
@@ -73,6 +88,22 @@ const apiRouteCatalogByLocale = {
       method: "GET",
       path: "/api/bootstrap",
       purpose: "Expose the scaffolded platform map to the frontend or tooling.",
+    },
+    {
+      method: "GET",
+      path: "/api/provider-configs",
+      purpose:
+        "List saved provider settings for a player and available system configs.",
+    },
+    {
+      method: "POST",
+      path: "/api/provider-configs",
+      purpose: "Create or update a player-scoped provider configuration.",
+    },
+    {
+      method: "DELETE",
+      path: "/api/provider-configs/:providerConfigId",
+      purpose: "Delete a player-scoped provider configuration.",
     },
     {
       method: "POST",
@@ -110,6 +141,21 @@ const apiRouteCatalogByLocale = {
       method: "GET",
       path: "/api/bootstrap",
       purpose: "向前端或工具暴露脚手架平台地图。",
+    },
+    {
+      method: "GET",
+      path: "/api/provider-configs",
+      purpose: "列出玩家保存的 provider 设置，以及可用的系统配置。",
+    },
+    {
+      method: "POST",
+      path: "/api/provider-configs",
+      purpose: "创建或更新玩家作用域的 provider 配置。",
+    },
+    {
+      method: "DELETE",
+      path: "/api/provider-configs/:providerConfigId",
+      purpose: "删除一个玩家作用域的 provider 配置。",
     },
     {
       method: "POST",

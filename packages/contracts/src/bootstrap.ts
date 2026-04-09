@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { providerConfigDescriptorSchema } from "./providers.js"
 
 export const appLocaleSchema = z.enum(["en", "zh-CN"])
 export const serviceIdSchema = z.enum(["web", "api", "worker"])
@@ -25,7 +26,7 @@ export const infrastructureTargetSchema = z.object({
 })
 
 export const apiRouteDescriptorSchema = z.object({
-  method: z.enum(["GET", "POST"]),
+  method: z.enum(["GET", "POST", "DELETE"]),
   path: z.string().min(1),
   purpose: z.string().min(1),
 })
@@ -50,6 +51,7 @@ export const bootstrapCatalogQuerySchema = z.object({
 
 export const bootstrapCatalogResponseSchema = bootstrapSummarySchema.extend({
   api_routes: z.array(apiRouteDescriptorSchema).min(1),
+  provider_configs: z.array(providerConfigDescriptorSchema).min(1),
   worker_jobs: z.array(workerJobDescriptorSchema).min(1),
 })
 

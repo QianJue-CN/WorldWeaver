@@ -23,14 +23,34 @@ Backend work currently touches four locations:
 apps/
 ├── api/
 │   └── src/
+│       ├── ai/
+│       │   ├── ai-gateway.ts
+│       │   ├── anthropic-client.ts
+│       │   ├── gemini-client.ts
+│       │   ├── mock-client.ts
+│       │   ├── openai-compatible-client.ts
+│       │   ├── prompts.ts
+│       │   ├── provider-clients.test.ts
+│       │   ├── provider-registry.ts
+│       │   └── retrieval.ts
 │       ├── lib/
+│       │   ├── api-error.ts
 │       │   ├── env.ts
 │       │   ├── response.ts
+│       │   ├── services.ts
 │       │   └── validation.ts
+│       ├── repositories/
+│       │   └── local-state.ts
 │       ├── routes/
 │       │   ├── bootstrap.ts
 │       │   ├── health.ts
-│       │   └── mvp.ts
+│       │   ├── mvp.ts
+│       │   └── provider-configs.ts
+│       ├── services/
+│       │   ├── mvp-service.test.ts
+│       │   ├── mvp-service.ts
+│       │   ├── provider-config-service.test.ts
+│       │   └── provider-config-service.ts
 │       └── server.ts
 └── worker/
     └── src/
@@ -71,6 +91,19 @@ When a change affects HTTP payloads or worker-visible identifiers, update files 
 - Worker boot or polling logic belongs in `apps/worker/src`
 - Cross-layer schemas must not live inside `apps/api/src/routes`
 
+### Rule: Thin Routes, Stateful Services
+
+- Route files should parse input, resolve locale, call a service, and wrap the result.
+- Business lifecycle logic belongs in `apps/api/src/services`.
+- Local persistence adapters belong in `apps/api/src/repositories`.
+- Route-facing domain errors belong in `apps/api/src/lib/api-error.ts`.
+
+### Rule: Protocol Adapters Live Under `ai/`
+
+- Provider protocol clients belong in `apps/api/src/ai`.
+- Prompt builders and retrieval helpers also belong in `apps/api/src/ai`.
+- Route handlers and domain services must not handcraft OpenAI, Gemini, or Anthropic request payloads inline.
+
 ### Rule: Put Shared Defaults in One Place
 
 Defaults shared by API and worker, such as local connection strings, belong in `packages/config/src/env.ts`.
@@ -90,6 +123,11 @@ Defaults shared by API and worker, such as local connection strings, belong in `
 ## Examples
 
 - `apps/api/src/routes/mvp.ts` shows route registration that consumes shared schemas
+- `apps/api/src/routes/provider-configs.ts` shows player-scoped settings CRUD at the HTTP boundary
 - `apps/api/src/lib/validation.ts` shows the request-boundary validation helper
+- `apps/api/src/services/mvp-service.ts` shows the current service-layer lifecycle orchestration
+- `apps/api/src/services/provider-config-service.ts` shows player provider settings orchestration
+- `apps/api/src/repositories/local-state.ts` shows the local persistence adapter used in development
+- `apps/api/src/ai/provider-registry.ts` shows provider resolution across built-in and player-scoped configs
 - `packages/contracts/src/mvp.ts` shows the shared source of truth for route payloads
 - `packages/config/src/jobs.ts` shows shared worker job identifiers
