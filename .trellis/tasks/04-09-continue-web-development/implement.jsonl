@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "App Router file and folder rules for first reusable frontend modules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Shared contracts and config must remain the source of truth"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "UI work must stay responsive and use deliberate visual tokens"}
+{"file": ".trellis/spec/backend/http-contracts.md", "reason": "Frontend mutations must respect current HTTP envelope and payload contracts"}

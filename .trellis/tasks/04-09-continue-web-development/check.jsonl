@@ -1,0 +1,6 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check-frontend/SKILL.md", "reason": "Frontend check spec"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Review new folders and App Router structure"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Review contract parsing and shared imports"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Review visual consistency and required verification"}
+{"file": ".trellis/spec/backend/http-contracts.md", "reason": "Review request and response contract alignment"}

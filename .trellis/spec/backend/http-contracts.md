@@ -33,8 +33,10 @@ The current scaffold keeps cross-layer contracts in `packages/contracts` and sha
 - `packages/contracts/src/common/api-envelope.ts`
 - `packages/contracts/src/mvp.ts`
 - `packages/config/src/env.ts`
+- `packages/config/src/runtime-env.ts`
 - `packages/config/src/jobs.ts`
 - `apps/api/src/lib/response.ts`
+- `apps/api/src/lib/env.ts`
 - `apps/api/src/lib/validation.ts`
 - `apps/api/src/routes/health.ts`
 - `apps/api/src/routes/bootstrap.ts`
@@ -112,6 +114,17 @@ Validation failures use:
 | `WORKER_NAME` | `apps/worker/src/env.ts` | `packages/config/src/env.ts` |
 | `WORKER_HEARTBEAT_MS` | `apps/worker/src/env.ts` | `packages/config/src/env.ts` |
 
+#### Runtime Env Loading
+
+For local non-production runtime startup:
+
+- `packages/config/src/runtime-env.ts` loads repo-root `.env.local` first
+- missing keys then fall back to repo-root `.env`
+- existing shell env values still win over file-based values
+- `apps/api/src/lib/env.ts` and `apps/worker/src/env.ts` must call `loadLocalRuntimeEnv(import.meta.url)` before `envSchema.parse(process.env)`
+
+This keeps `pnpm dev:api`, `pnpm dev:worker`, and `pnpm dev:web` aligned on the same local environment contract.
+
 #### Worker Job IDs Returned by API
 
 - `draft_commit_extraction`
@@ -125,6 +138,9 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 
 | Trigger | Boundary | Expected Outcome |
 |--------|----------|------------------|
+| `.env.local` contains a local override such as `POSTGRES_URL` | `loadLocalRuntimeEnv()` | API and worker use the `.env.local` value during local startup |
+| `.env.local` omits a key but `.env` contains it | `loadLocalRuntimeEnv()` | Startup falls back to the `.env` value |
+| Shell env already defines a key such as `API_PORT` | `loadEnvFile()` behavior | Existing `process.env` value stays unchanged |
 | Valid request body | `parseBody()` | Route continues with typed `body` |
 | Invalid request body | `parseBody()` | HTTP `400` with `message: "validation_error"` and flattened `issues` |
 | Missing optional field `title` in session create | `createSessionRequestSchema` | Accepted, route uses `"New Session"` fallback |
@@ -140,11 +156,14 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 - Import that schema into `apps/api/src/routes/*.ts`
 - Validate through `parseBody()`
 - Return through `success()`
+- Load local runtime env once from `apps/api/src/lib/env.ts` or `apps/worker/src/env.ts`
+- Keep local overrides in repo-root `.env.local` instead of duplicating connection strings in app code
 
 #### Base
 
 - A scaffold endpoint may return placeholder data
 - Placeholder data must still be parsed by the matching response schema before returning
+- API and worker may use shared defaults from `packages/config/src/env.ts` when neither `.env.local` nor `.env` provides a key
 
 #### Bad
 
@@ -152,6 +171,8 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 - Return raw JSON without `success()`
 - Duplicate shared defaults in `apps/api/src/lib/env.ts` and `apps/worker/src/env.ts`
 - Add a new worker job id in the route handler without updating `packages/config/src/jobs.ts`
+- Read repo-root env files ad hoc from multiple services instead of reusing `packages/config/src/runtime-env.ts`
+- Parse `process.env` before calling `loadLocalRuntimeEnv(import.meta.url)` in API or worker env modules
 
 ### 6. Tests Required
 
@@ -171,6 +192,7 @@ When automated route tests are added, assert at least:
 - response `data` matches the shared response schema
 - `queued_jobs` only contains ids defined in `packages/config/src/jobs.ts`
 - env parsing rejects invalid numeric configuration
+- API and worker both honor repo-root `.env.local` overrides during local startup
 
 ### 7. Wrong vs Correct
 

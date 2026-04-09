@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./runtime-env": {
+      "types": "./dist/runtime-env.d.ts",
+      "import": "./dist/runtime-env.js"
     }
   },
   "main": "./dist/index.js",

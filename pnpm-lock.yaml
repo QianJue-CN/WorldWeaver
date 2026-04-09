@@ -41,6 +41,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@chenglou/pretext':
+        specifier: ^0.0.5
+        version: 0.0.5
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -50,6 +53,9 @@ importers:
       '@worldweaver/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@worldweaver/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       next:
         specifier: ^16.2.3
         version: 16.2.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -135,6 +141,9 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
+
+  '@chenglou/pretext@0.0.5':
+    resolution: {integrity: sha512-A8GZN10REdFGsyuiUgLV8jjPDDFMg5GmgxGWV0I3igxBOnzj+jgz2VMmVD7g+SFyoctfeqHFxbNatKSzVRWtRg==}
 
   '@emnapi/runtime@1.9.2':
     resolution: {integrity: sha512-3U4+MIWHImeyu1wnmVygh5WlgfYDtyf0k8AbLhMFxOipihf6nrWC4syIm/SwEeec0mNSafiiNnMJwbza/Is6Lw==}
@@ -842,6 +851,8 @@ snapshots:
 
   '@biomejs/cli-win32-x64@2.4.10':
     optional: true
+
+  '@chenglou/pretext@0.0.5': {}
 
   '@emnapi/runtime@1.9.2':
     dependencies:

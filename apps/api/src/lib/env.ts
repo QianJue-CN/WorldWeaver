@@ -1,5 +1,8 @@
 import { localServiceDefaults } from "@worldweaver/config"
+import { loadLocalRuntimeEnv } from "@worldweaver/config/runtime-env"
 import { z } from "zod"
+
+loadLocalRuntimeEnv(import.meta.url)
 
 const envSchema = z.object({
   NODE_ENV: z

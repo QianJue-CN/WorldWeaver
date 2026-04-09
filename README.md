@@ -28,6 +28,8 @@ pnpm dev:worker
 
 Shared packages compile to `dist/` before each app dev command. If you change code under `packages/`, rerun the relevant `pnpm dev:*` command or `pnpm build:shared`.
 
+For local development, `apps/web`, `apps/api`, and `apps/worker` all read the repo-root `.env.local` first, then fall back to `.env` when a key is missing.
+
 ## What Exists Today
 
 - A monorepo aligned to the documented service boundaries
