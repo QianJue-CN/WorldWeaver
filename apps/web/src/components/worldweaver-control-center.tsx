@@ -1,5 +1,10 @@
 "use client"
 
+import {
+  type AppLocale,
+  getWorldWeaverWebCopy,
+  type WorldWeaverWebCopy,
+} from "@worldweaver/config"
 import type {
   ChatSendResponse,
   CommitWorldResponse,
@@ -7,7 +12,13 @@ import type {
   DraftGenerateResponse,
   HealthResponse,
 } from "@worldweaver/contracts"
-import { type ReactNode, useEffect, useEffectEvent, useState } from "react"
+import {
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react"
 import {
   apiBaseUrl,
   commitWorld,
@@ -34,17 +45,45 @@ type ChatEntry = {
   content: string
 }
 
-const initialWorldPrompt =
-  "Build a rain-soaked gothic megacity where vampire houses control trade routes, debt, and ancient weather engines."
-const initialRefinePrompt =
-  "Push the ruling vampire house toward more cyber-gothic aesthetics and add one fragile alliance with machine monks."
-const initialWorldName = "Ash Meridian"
-const initialWorldTheme =
-  "Cyber-gothic intrigue with industrial occult politics"
-const initialSessionTitle = "Archive Break-In"
-const initialUserId = "player_local"
-const initialChatMessage =
-  "I want to sneak into the Ash Meridian archive without waking the wardens. What do I notice first?"
+const localizedDefaultsByLocale = {
+  en: getWorldWeaverWebCopy("en").controlCenter.defaults,
+  "zh-CN": getWorldWeaverWebCopy("zh-CN").controlCenter.defaults,
+} as const
+
+const defaultCandidates = {
+  providerConfigId: [
+    localizedDefaultsByLocale.en.providerConfigId,
+    localizedDefaultsByLocale["zh-CN"].providerConfigId,
+  ],
+  basePrompt: [
+    localizedDefaultsByLocale.en.basePrompt,
+    localizedDefaultsByLocale["zh-CN"].basePrompt,
+  ],
+  refineFeedback: [
+    localizedDefaultsByLocale.en.refineFeedback,
+    localizedDefaultsByLocale["zh-CN"].refineFeedback,
+  ],
+  worldName: [
+    localizedDefaultsByLocale.en.worldName,
+    localizedDefaultsByLocale["zh-CN"].worldName,
+  ],
+  worldTheme: [
+    localizedDefaultsByLocale.en.worldTheme,
+    localizedDefaultsByLocale["zh-CN"].worldTheme,
+  ],
+  sessionTitle: [
+    localizedDefaultsByLocale.en.sessionTitle,
+    localizedDefaultsByLocale["zh-CN"].sessionTitle,
+  ],
+  sessionUserId: [
+    localizedDefaultsByLocale.en.sessionUserId,
+    localizedDefaultsByLocale["zh-CN"].sessionUserId,
+  ],
+  chatMessage: [
+    localizedDefaultsByLocale.en.chatMessage,
+    localizedDefaultsByLocale["zh-CN"].chatMessage,
+  ],
+} as const
 
 function createIdleState<T>(message: string): ActionState<T> {
   return {
@@ -74,11 +113,48 @@ function createFeedbackClassName(status: AsyncStatus) {
   return "feedback"
 }
 
+function formatTemplate(
+  template: string,
+  values: Record<string, string | number>,
+) {
+  return Object.entries(values).reduce(
+    (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+    template,
+  )
+}
+
+function replaceSeedValue(
+  currentValue: string,
+  nextValue: string,
+  candidates: readonly string[],
+) {
+  return candidates.includes(currentValue) ? nextValue : currentValue
+}
+
+function formatTime(locale: AppLocale, timestamp: number | null) {
+  if (timestamp === null) {
+    return null
+  }
+
+  return new Date(timestamp).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function formatServerStatus(
+  status: string,
+  labels: WorldWeaverWebCopy["controlCenter"]["serverStatusLabels"],
+) {
+  return labels[status as keyof typeof labels] ?? status
+}
+
 function ActionCard({
   eyebrow,
   title,
   copy,
   status,
+  statusLabel,
   children,
   wide = false,
 }: Readonly<{
@@ -86,6 +162,7 @@ function ActionCard({
   title: string
   copy: string
   status: AsyncStatus
+  statusLabel: string
   children: ReactNode
   wide?: boolean
 }>) {
@@ -96,7 +173,7 @@ function ActionCard({
           <p className="action-eyebrow">{eyebrow}</p>
           <h3 className="action-title">{title}</h3>
         </div>
-        <span className={createStatusClassName(status)}>{status}</span>
+        <span className={createStatusClassName(status)}>{statusLabel}</span>
       </div>
       <p className="action-copy">{copy}</p>
       {children}
@@ -104,74 +181,172 @@ function ActionCard({
   )
 }
 
-export function WorldWeaverControlCenter() {
-  const [providerConfigId, setProviderConfigId] = useState("cfg_openai_default")
-  const [basePrompt, setBasePrompt] = useState(initialWorldPrompt)
+export function WorldWeaverControlCenter({
+  copy,
+  locale,
+}: Readonly<{
+  copy: WorldWeaverWebCopy["controlCenter"]
+  locale: AppLocale
+}>) {
+  const [providerConfigId, setProviderConfigId] = useState(
+    copy.defaults.providerConfigId,
+  )
+  const [basePrompt, setBasePrompt] = useState(copy.defaults.basePrompt)
   const [enableSearch, setEnableSearch] = useState(true)
-  const [refineFeedback, setRefineFeedback] = useState(initialRefinePrompt)
-  const [worldName, setWorldName] = useState(initialWorldName)
-  const [worldTheme, setWorldTheme] = useState(initialWorldTheme)
-  const [sessionTitle, setSessionTitle] = useState(initialSessionTitle)
-  const [sessionUserId, setSessionUserId] = useState(initialUserId)
-  const [chatMessage, setChatMessage] = useState(initialChatMessage)
+  const [refineFeedback, setRefineFeedback] = useState(
+    copy.defaults.refineFeedback,
+  )
+  const [worldName, setWorldName] = useState(copy.defaults.worldName)
+  const [worldTheme, setWorldTheme] = useState(copy.defaults.worldTheme)
+  const [sessionTitle, setSessionTitle] = useState(copy.defaults.sessionTitle)
+  const [sessionUserId, setSessionUserId] = useState(
+    copy.defaults.sessionUserId,
+  )
+  const [chatMessage, setChatMessage] = useState(copy.defaults.chatMessage)
 
   const [healthState, setHealthState] = useState<ActionState<HealthResponse>>(
-    createIdleState("Run a health check to verify the local API target."),
+    createIdleState(copy.health.fallback.idle),
   )
-  const [healthCheckedAt, setHealthCheckedAt] = useState<string | null>(null)
+  const [healthCheckedAt, setHealthCheckedAt] = useState<number | null>(null)
 
   const [draftState, setDraftState] = useState<
     ActionState<DraftGenerateResponse>
-  >(createIdleState("Generate a draft to unlock refinement and commit."))
+  >(createIdleState(copy.draft.fallback.idle))
   const [commitState, setCommitState] = useState<
     ActionState<CommitWorldResponse>
-  >(createIdleState("Commit remains locked until a draft exists."))
+  >(createIdleState(copy.commit.fallback.idle))
   const [sessionState, setSessionState] = useState<
     ActionState<CreateSessionResponse>
-  >(createIdleState("Create a session after the world commit is queued."))
+  >(createIdleState(copy.session.fallback.idle))
   const [chatState, setChatState] = useState<ActionState<ChatSendResponse>>(
-    createIdleState("Send a message after a session becomes active."),
+    createIdleState(copy.chat.fallback.idle),
   )
   const [chatLog, setChatLog] = useState<ChatEntry[]>([])
+  const previousLocaleRef = useRef(locale)
 
   const activeDraft = draftState.data
   const activeWorldId =
     sessionState.data?.world_id ?? commitState.data?.world_id
   const activeSessionId = sessionState.data?.session_id
 
+  useEffect(() => {
+    const previousLocale = previousLocaleRef.current
+
+    if (previousLocale === locale) {
+      return
+    }
+
+    setProviderConfigId((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.providerConfigId,
+        defaultCandidates.providerConfigId,
+      ),
+    )
+    setBasePrompt((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.basePrompt,
+        defaultCandidates.basePrompt,
+      ),
+    )
+    setRefineFeedback((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.refineFeedback,
+        defaultCandidates.refineFeedback,
+      ),
+    )
+    setWorldName((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.worldName,
+        defaultCandidates.worldName,
+      ),
+    )
+    setWorldTheme((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.worldTheme,
+        defaultCandidates.worldTheme,
+      ),
+    )
+    setSessionTitle((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.sessionTitle,
+        defaultCandidates.sessionTitle,
+      ),
+    )
+    setSessionUserId((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.sessionUserId,
+        defaultCandidates.sessionUserId,
+      ),
+    )
+    setChatMessage((current) =>
+      replaceSeedValue(
+        current,
+        copy.defaults.chatMessage,
+        defaultCandidates.chatMessage,
+      ),
+    )
+
+    setHealthState((current) =>
+      current.status === "idle"
+        ? createIdleState(copy.health.fallback.idle)
+        : current,
+    )
+    setDraftState((current) =>
+      current.status === "idle"
+        ? createIdleState(copy.draft.fallback.idle)
+        : current,
+    )
+    setCommitState((current) =>
+      current.status === "idle"
+        ? createIdleState(copy.commit.fallback.idle)
+        : current,
+    )
+    setSessionState((current) =>
+      current.status === "idle"
+        ? createIdleState(copy.session.fallback.idle)
+        : current,
+    )
+    setChatState((current) =>
+      current.status === "idle"
+        ? createIdleState(copy.chat.fallback.idle)
+        : current,
+    )
+
+    previousLocaleRef.current = locale
+  }, [copy, locale])
+
   const checkHealth = useEffectEvent(async () => {
     setHealthState({
       status: "loading",
-      message: `Checking ${apiBaseUrl}...`,
+      message: formatTemplate(copy.health.messages.checking, { apiBaseUrl }),
       data: null,
     })
 
     try {
-      const response = await getHealth()
+      const response = await getHealth({ locale })
 
       setHealthState({
         status: "success",
-        message: `API ready. Request ${response.request_id}.`,
+        message: formatTemplate(copy.health.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
-      setHealthCheckedAt(
-        new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      )
+      setHealthCheckedAt(Date.now())
     } catch (error) {
       setHealthState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: null,
       })
-      setHealthCheckedAt(
-        new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      )
+      setHealthCheckedAt(Date.now())
     }
   })
 
@@ -182,34 +357,35 @@ export function WorldWeaverControlCenter() {
   async function handleGenerateDraft() {
     setDraftState({
       status: "loading",
-      message: "Generating the first local world draft...",
+      message: copy.draft.messages.generating,
       data: activeDraft ?? null,
     })
 
     try {
-      const response = await generateDraft({
-        base_prompt: basePrompt,
-        enable_search: enableSearch,
-        provider_config_id: providerConfigId,
-      })
+      const response = await generateDraft(
+        {
+          base_prompt: basePrompt,
+          enable_search: enableSearch,
+          provider_config_id: providerConfigId,
+        },
+        { locale },
+      )
 
       setDraftState({
         status: "success",
-        message: `Draft ready. Request ${response.request_id}.`,
+        message: formatTemplate(copy.draft.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
-      setCommitState(createIdleState("Draft is ready. Commit can run next."))
-      setSessionState(
-        createIdleState("Create a session after the world commit is queued."),
-      )
-      setChatState(
-        createIdleState("Send a message after a session becomes active."),
-      )
+      setCommitState(createIdleState(copy.draft.messages.commitReady))
+      setSessionState(createIdleState(copy.draft.messages.sessionLocked))
+      setChatState(createIdleState(copy.draft.messages.chatLocked))
       setChatLog([])
     } catch (error) {
       setDraftState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: activeDraft ?? null,
       })
     }
@@ -219,7 +395,7 @@ export function WorldWeaverControlCenter() {
     if (!activeDraft) {
       setDraftState({
         status: "error",
-        message: "Generate a draft before asking for a refinement pass.",
+        message: copy.draft.messages.refineMissingDraft,
         data: null,
       })
       return
@@ -227,26 +403,33 @@ export function WorldWeaverControlCenter() {
 
     setDraftState({
       status: "loading",
-      message: `Refining ${activeDraft.draft_id}...`,
+      message: formatTemplate(copy.draft.messages.refining, {
+        draftId: activeDraft.draft_id,
+      }),
       data: activeDraft,
     })
 
     try {
-      const response = await refineDraft({
-        draft_id: activeDraft.draft_id,
-        user_feedback: refineFeedback,
-        provider_config_id: providerConfigId,
-      })
+      const response = await refineDraft(
+        {
+          draft_id: activeDraft.draft_id,
+          user_feedback: refineFeedback,
+          provider_config_id: providerConfigId,
+        },
+        { locale },
+      )
 
       setDraftState({
         status: "success",
-        message: `Refinement ready. Request ${response.request_id}.`,
+        message: formatTemplate(copy.draft.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
     } catch (error) {
       setDraftState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: activeDraft,
       })
     }
@@ -256,7 +439,7 @@ export function WorldWeaverControlCenter() {
     if (!activeDraft) {
       setCommitState({
         status: "error",
-        message: "Commit needs the current draft id first.",
+        message: copy.commit.messages.missingDraft,
         data: null,
       })
       return
@@ -264,35 +447,36 @@ export function WorldWeaverControlCenter() {
 
     setCommitState({
       status: "loading",
-      message: `Committing ${activeDraft.draft_id} into the processing pipeline...`,
+      message: formatTemplate(copy.commit.messages.committing, {
+        draftId: activeDraft.draft_id,
+      }),
       data: commitState.data,
     })
 
     try {
-      const response = await commitWorld({
-        draft_id: activeDraft.draft_id,
-        world_name: worldName,
-        theme: worldTheme,
-      })
+      const response = await commitWorld(
+        {
+          draft_id: activeDraft.draft_id,
+          world_name: worldName,
+          theme: worldTheme,
+        },
+        { locale },
+      )
 
       setCommitState({
         status: "success",
-        message: `World queued. Request ${response.request_id}.`,
+        message: formatTemplate(copy.commit.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
-      setSessionState(
-        createIdleState(
-          "World processing is queued. Launch the first session.",
-        ),
-      )
-      setChatState(
-        createIdleState("Send a message after a session becomes active."),
-      )
+      setSessionState(createIdleState(copy.commit.messages.sessionReady))
+      setChatState(createIdleState(copy.commit.messages.chatLocked))
       setChatLog([])
     } catch (error) {
       setCommitState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: commitState.data,
       })
     }
@@ -302,8 +486,7 @@ export function WorldWeaverControlCenter() {
     if (!activeWorldId) {
       setSessionState({
         status: "error",
-        message:
-          "Commit the world first so the session knows which world to use.",
+        message: copy.session.messages.missingWorld,
         data: null,
       })
       return
@@ -311,33 +494,39 @@ export function WorldWeaverControlCenter() {
 
     setSessionState({
       status: "loading",
-      message: `Creating a session under ${activeWorldId}...`,
+      message: formatTemplate(copy.session.messages.creating, {
+        worldId: activeWorldId,
+      }),
       data: sessionState.data,
     })
 
     try {
-      const response = await createSession({
-        world_id: activeWorldId,
-        user_id: sessionUserId,
-        title: sessionTitle,
-      })
+      const response = await createSession(
+        {
+          world_id: activeWorldId,
+          user_id: sessionUserId,
+          title: sessionTitle,
+        },
+        { locale },
+      )
 
       setSessionState({
         status: "success",
-        message: `Session active. Request ${response.request_id}.`,
+        message: formatTemplate(copy.session.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
       setChatState({
         status: "idle",
-        message:
-          "Session is live. Send the opening move to test the placeholder reply.",
+        message: copy.session.messages.chatReady,
         data: null,
       })
       setChatLog([])
     } catch (error) {
       setSessionState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: sessionState.data,
       })
     }
@@ -347,7 +536,7 @@ export function WorldWeaverControlCenter() {
     if (!activeSessionId) {
       setChatState({
         status: "error",
-        message: "Create a session before sending chat.",
+        message: copy.chat.messages.missingSession,
         data: null,
       })
       return
@@ -355,16 +544,21 @@ export function WorldWeaverControlCenter() {
 
     setChatState({
       status: "loading",
-      message: `Sending the current turn to ${activeSessionId}...`,
+      message: formatTemplate(copy.chat.messages.sending, {
+        sessionId: activeSessionId,
+      }),
       data: chatState.data,
     })
 
     try {
-      const response = await sendChat({
-        session_id: activeSessionId,
-        user_message: chatMessage,
-        provider_config_id: providerConfigId,
-      })
+      const response = await sendChat(
+        {
+          session_id: activeSessionId,
+          user_message: chatMessage,
+          provider_config_id: providerConfigId,
+        },
+        { locale },
+      )
 
       setChatLog((current) => [
         ...current,
@@ -381,14 +575,16 @@ export function WorldWeaverControlCenter() {
       ])
       setChatState({
         status: "success",
-        message: `Reply received. Request ${response.request_id}.`,
+        message: formatTemplate(copy.chat.messages.success, {
+          requestId: response.request_id,
+        }),
         data: response.data,
       })
       setChatMessage("")
     } catch (error) {
       setChatState({
         status: "error",
-        message: getErrorMessage(error),
+        message: getErrorMessage(error, locale),
         data: chatState.data,
       })
     }
@@ -397,32 +593,36 @@ export function WorldWeaverControlCenter() {
   return (
     <div className="control-grid">
       <ActionCard
-        copy="The page reads NEXT_PUBLIC_API_BASE_URL and checks the current Fastify target before deeper actions."
-        eyebrow="Runtime Link"
+        copy={copy.health.copy}
+        eyebrow={copy.health.eyebrow}
         status={healthState.status}
-        title="API handshake"
+        statusLabel={copy.statusLabels[healthState.status]}
+        title={copy.health.title}
         wide
       >
         <div className="signal-strip">
           <div className="signal-tile">
-            <p className="result-title">API base URL</p>
+            <p className="result-title">{copy.health.labels.apiBaseUrl}</p>
             <p className="muted-copy mono-text">{apiBaseUrl}</p>
           </div>
           <div className="signal-tile">
-            <p className="result-title">Service</p>
+            <p className="result-title">{copy.health.labels.service}</p>
             <p className="muted-copy">
-              {healthState.data?.service ?? "Awaiting check"}
+              {healthState.data?.service ?? copy.health.fallback.service}
             </p>
           </div>
           <div className="signal-tile">
-            <p className="result-title">Started at</p>
+            <p className="result-title">{copy.health.labels.startedAt}</p>
             <p className="muted-copy mono-text">
-              {healthState.data?.started_at ?? "Not available yet"}
+              {healthState.data?.started_at ?? copy.health.fallback.startedAt}
             </p>
           </div>
           <div className="signal-tile">
-            <p className="result-title">Last check</p>
-            <p className="muted-copy">{healthCheckedAt ?? "Checking..."}</p>
+            <p className="result-title">{copy.health.labels.lastCheck}</p>
+            <p className="muted-copy">
+              {formatTime(locale, healthCheckedAt) ??
+                copy.health.fallback.lastCheck}
+            </p>
           </div>
         </div>
 
@@ -441,26 +641,26 @@ export function WorldWeaverControlCenter() {
             }}
             type="button"
           >
-            Refresh health
+            {copy.health.refreshButton}
           </button>
-          <p className="helper-copy">
-            If this card stays red, start `pnpm dev:api` and confirm the local
-            URL in `.env.local`.
-          </p>
+          <p className="helper-copy">{copy.health.helper}</p>
         </div>
       </ActionCard>
 
       <ActionCard
-        copy="Generate the first setting pass, then request a refinement without leaving the page."
-        eyebrow="Chapter 1"
+        copy={copy.draft.copy}
+        eyebrow={copy.draft.eyebrow}
         status={draftState.status}
-        title="World draft studio"
+        statusLabel={copy.statusLabels[draftState.status]}
+        title={copy.draft.title}
         wide
       >
         <fieldset disabled={draftState.status === "loading"}>
           <div className="field-grid field-grid-single">
             <label className="field" htmlFor="base-prompt">
-              <span className="field-label">Base prompt</span>
+              <span className="field-label">
+                {copy.draft.labels.basePrompt}
+              </span>
               <textarea
                 className="field-textarea"
                 id="base-prompt"
@@ -475,7 +675,9 @@ export function WorldWeaverControlCenter() {
 
           <div className="field-grid">
             <label className="field" htmlFor="provider-config-id">
-              <span className="field-label">Provider config id</span>
+              <span className="field-label">
+                {copy.draft.labels.providerConfigId}
+              </span>
               <input
                 className="field-input"
                 id="provider-config-id"
@@ -497,7 +699,7 @@ export function WorldWeaverControlCenter() {
                 }}
                 type="checkbox"
               />
-              <span>Enable search notes for the scaffold response</span>
+              <span>{copy.draft.labels.enableSearch}</span>
             </label>
           </div>
 
@@ -509,7 +711,7 @@ export function WorldWeaverControlCenter() {
               }}
               type="button"
             >
-              Generate draft
+              {copy.draft.buttons.generate}
             </button>
             <button
               className="ghost-button"
@@ -519,13 +721,15 @@ export function WorldWeaverControlCenter() {
               }}
               type="button"
             >
-              Refine current draft
+              {copy.draft.buttons.refine}
             </button>
           </div>
 
           <div className="field-grid field-grid-single">
             <label className="field" htmlFor="refine-feedback">
-              <span className="field-label">Refinement feedback</span>
+              <span className="field-label">
+                {copy.draft.labels.refineFeedback}
+              </span>
               <textarea
                 className="field-textarea"
                 id="refine-feedback"
@@ -550,17 +754,22 @@ export function WorldWeaverControlCenter() {
           <div className="result-stack">
             <div className="result-grid">
               <div className="result-panel">
-                <p className="result-title">Draft id</p>
+                <p className="result-title">{copy.draft.labels.draftId}</p>
                 <p className="muted-copy mono-text">{activeDraft.draft_id}</p>
               </div>
               <div className="result-panel">
-                <p className="result-title">Draft status</p>
-                <p className="muted-copy">{activeDraft.status}</p>
+                <p className="result-title">{copy.draft.labels.draftStatus}</p>
+                <p className="muted-copy">
+                  {formatServerStatus(
+                    activeDraft.status,
+                    copy.serverStatusLabels,
+                  )}
+                </p>
               </div>
             </div>
 
             <div className="result-panel">
-              <p className="result-title">Outline</p>
+              <p className="result-title">{copy.draft.labels.outline}</p>
               <ul className="list-reset result-block">
                 {activeDraft.outline.map((item) => (
                   <li className="muted-copy" key={item}>
@@ -571,7 +780,7 @@ export function WorldWeaverControlCenter() {
             </div>
 
             <div className="result-panel">
-              <p className="result-title">Reference notes</p>
+              <p className="result-title">{copy.draft.labels.referenceNotes}</p>
               <div className="chip-list result-block">
                 {activeDraft.reference_notes.map((item) => (
                   <span className="tag-pill tag-pill-soft" key={item}>
@@ -582,7 +791,7 @@ export function WorldWeaverControlCenter() {
             </div>
 
             <div className="result-panel">
-              <p className="result-title">Draft text</p>
+              <p className="result-title">{copy.draft.labels.draftText}</p>
               <p className="muted-copy result-pre">{activeDraft.draft_text}</p>
             </div>
           </div>
@@ -590,15 +799,18 @@ export function WorldWeaverControlCenter() {
       </ActionCard>
 
       <ActionCard
-        copy="Move from draft mode into the processing pipeline and keep the returned job ids visible."
-        eyebrow="Chapter 2"
+        copy={copy.commit.copy}
+        eyebrow={copy.commit.eyebrow}
         status={commitState.status}
-        title="Commit the world"
+        statusLabel={copy.statusLabels[commitState.status]}
+        title={copy.commit.title}
       >
         <fieldset disabled={commitState.status === "loading"}>
           <div className="field-grid">
             <label className="field" htmlFor="world-name">
-              <span className="field-label">World name</span>
+              <span className="field-label">
+                {copy.commit.labels.worldName}
+              </span>
               <input
                 className="field-input"
                 id="world-name"
@@ -612,7 +824,7 @@ export function WorldWeaverControlCenter() {
             </label>
 
             <label className="field" htmlFor="world-theme">
-              <span className="field-label">Theme</span>
+              <span className="field-label">{copy.commit.labels.theme}</span>
               <input
                 className="field-input"
                 id="world-theme"
@@ -635,12 +847,12 @@ export function WorldWeaverControlCenter() {
               }}
               type="button"
             >
-              Commit world
+              {copy.commit.buttons.commit}
             </button>
             <p className="helper-copy">
-              Current draft:{" "}
+              {copy.commit.labels.currentDraft}:{" "}
               <span className="mono-text">
-                {activeDraft?.draft_id ?? "Generate draft first"}
+                {activeDraft?.draft_id ?? copy.commit.fallback.currentDraft}
               </span>
             </p>
           </div>
@@ -657,19 +869,26 @@ export function WorldWeaverControlCenter() {
           <div className="result-stack">
             <div className="result-grid">
               <div className="result-panel">
-                <p className="result-title">World id</p>
+                <p className="result-title">{copy.commit.labels.worldId}</p>
                 <p className="muted-copy mono-text">
                   {commitState.data.world_id}
                 </p>
               </div>
               <div className="result-panel">
-                <p className="result-title">Pipeline state</p>
-                <p className="muted-copy">{commitState.data.status}</p>
+                <p className="result-title">
+                  {copy.commit.labels.pipelineState}
+                </p>
+                <p className="muted-copy">
+                  {formatServerStatus(
+                    commitState.data.status,
+                    copy.serverStatusLabels,
+                  )}
+                </p>
               </div>
             </div>
 
             <div className="result-panel">
-              <p className="result-title">Queued jobs</p>
+              <p className="result-title">{copy.commit.labels.queuedJobs}</p>
               <div className="chip-list result-block">
                 {commitState.data.queued_jobs.map((item) => (
                   <span className="tag-pill tag-pill-soft" key={item}>
@@ -683,15 +902,16 @@ export function WorldWeaverControlCenter() {
       </ActionCard>
 
       <ActionCard
-        copy="Spin up a player session against the committed world so the chat loop can attach to a concrete session id."
-        eyebrow="Chapter 3"
+        copy={copy.session.copy}
+        eyebrow={copy.session.eyebrow}
         status={sessionState.status}
-        title="Launch a session"
+        statusLabel={copy.statusLabels[sessionState.status]}
+        title={copy.session.title}
       >
         <fieldset disabled={sessionState.status === "loading"}>
           <div className="field-grid">
             <label className="field" htmlFor="session-user-id">
-              <span className="field-label">User id</span>
+              <span className="field-label">{copy.session.labels.userId}</span>
               <input
                 className="field-input"
                 id="session-user-id"
@@ -705,7 +925,9 @@ export function WorldWeaverControlCenter() {
             </label>
 
             <label className="field" htmlFor="session-title">
-              <span className="field-label">Session title</span>
+              <span className="field-label">
+                {copy.session.labels.sessionTitle}
+              </span>
               <input
                 className="field-input"
                 id="session-title"
@@ -728,12 +950,12 @@ export function WorldWeaverControlCenter() {
               }}
               type="button"
             >
-              Create session
+              {copy.session.buttons.create}
             </button>
             <p className="helper-copy">
-              Active world:{" "}
+              {copy.session.labels.activeWorld}:{" "}
               <span className="mono-text">
-                {activeWorldId ?? "Commit world first"}
+                {activeWorldId ?? copy.session.fallback.activeWorld}
               </span>
             </p>
           </div>
@@ -750,14 +972,21 @@ export function WorldWeaverControlCenter() {
           <div className="result-stack">
             <div className="result-grid">
               <div className="result-panel">
-                <p className="result-title">Session id</p>
+                <p className="result-title">{copy.session.labels.sessionId}</p>
                 <p className="muted-copy mono-text">
                   {sessionState.data.session_id}
                 </p>
               </div>
               <div className="result-panel">
-                <p className="result-title">Session status</p>
-                <p className="muted-copy">{sessionState.data.status}</p>
+                <p className="result-title">
+                  {copy.session.labels.sessionStatus}
+                </p>
+                <p className="muted-copy">
+                  {formatServerStatus(
+                    sessionState.data.status,
+                    copy.serverStatusLabels,
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -765,16 +994,17 @@ export function WorldWeaverControlCenter() {
       </ActionCard>
 
       <ActionCard
-        copy="Send a player move into the placeholder chat route and render the assistant reply with pretext-based line layout."
-        eyebrow="Chapter 4"
+        copy={copy.chat.copy}
+        eyebrow={copy.chat.eyebrow}
         status={chatState.status}
-        title="Story terminal"
+        statusLabel={copy.statusLabels[chatState.status]}
+        title={copy.chat.title}
         wide
       >
         <fieldset disabled={chatState.status === "loading"}>
           <div className="field-grid field-grid-single">
             <label className="field" htmlFor="chat-message">
-              <span className="field-label">Player move</span>
+              <span className="field-label">{copy.chat.labels.playerMove}</span>
               <textarea
                 className="field-textarea"
                 id="chat-message"
@@ -796,12 +1026,12 @@ export function WorldWeaverControlCenter() {
               }}
               type="button"
             >
-              Send opening turn
+              {copy.chat.buttons.send}
             </button>
             <p className="helper-copy">
-              Active session:{" "}
+              {copy.chat.labels.activeSession}:{" "}
               <span className="mono-text">
-                {activeSessionId ?? "Create session first"}
+                {activeSessionId ?? copy.chat.fallback.activeSession}
               </span>
             </p>
           </div>
@@ -817,7 +1047,7 @@ export function WorldWeaverControlCenter() {
         {chatState.data ? (
           <div className="result-stack">
             <div className="result-panel">
-              <p className="result-title">Queued jobs</p>
+              <p className="result-title">{copy.chat.labels.queuedJobs}</p>
               <div className="chip-list result-block">
                 {chatState.data.queued_jobs.map((item) => (
                   <span className="tag-pill tag-pill-soft" key={item}>
@@ -840,7 +1070,11 @@ export function WorldWeaverControlCenter() {
                 }`}
                 key={entry.id}
               >
-                <p className="chat-role">{entry.role}</p>
+                <p className="chat-role">
+                  {entry.role === "user"
+                    ? copy.chat.roles.user
+                    : copy.chat.roles.assistant}
+                </p>
                 {entry.role === "assistant" ? (
                   <PretextStreamText text={entry.content} />
                 ) : (
@@ -851,10 +1085,11 @@ export function WorldWeaverControlCenter() {
           </div>
         ) : (
           <div className="result-panel">
-            <p className="result-title">Conversation thread</p>
+            <p className="result-title">
+              {copy.chat.labels.conversationThread}
+            </p>
             <p className="muted-copy result-block">
-              No turns yet. Launch the first message after the session is
-              active.
+              {copy.chat.fallback.emptyThread}
             </p>
           </div>
         )}

@@ -31,11 +31,15 @@ The current scaffold keeps cross-layer contracts in `packages/contracts` and sha
 #### Files
 
 - `packages/contracts/src/common/api-envelope.ts`
+- `packages/contracts/src/bootstrap.ts`
 - `packages/contracts/src/mvp.ts`
+- `packages/config/src/api-copy.ts`
 - `packages/config/src/env.ts`
+- `packages/config/src/i18n.ts`
 - `packages/config/src/runtime-env.ts`
 - `packages/config/src/jobs.ts`
 - `apps/api/src/lib/response.ts`
+- `apps/api/src/lib/locale.ts`
 - `apps/api/src/lib/env.ts`
 - `apps/api/src/lib/validation.ts`
 - `apps/api/src/routes/health.ts`
@@ -95,11 +99,49 @@ Validation failures use:
 
 | Endpoint | Request Source | Response Source |
 |---------|----------------|-----------------|
+| `/api/bootstrap` | `bootstrapCatalogQuerySchema` | `bootstrapCatalogResponseSchema` |
 | `/api/worlds/drafts/generate` | `draftGenerateRequestSchema` | `draftGenerateResponseSchema` |
 | `/api/worlds/drafts/refine` | `draftRefineRequestSchema` | `draftRefineResponseSchema` |
 | `/api/worlds/commit` | `commitWorldRequestSchema` | `commitWorldResponseSchema` |
 | `/api/sessions` | `createSessionRequestSchema` | `createSessionResponseSchema` |
 | `/api/chat/send` | `chatSendRequestSchema` | `chatSendResponseSchema` |
+
+#### Locale Negotiation
+
+Current scaffold locale resolution lives in `packages/config/src/i18n.ts` and `apps/api/src/lib/locale.ts`.
+
+Supported locales:
+
+- `en`
+- `zh-CN`
+
+Request boundaries:
+
+- `/api/bootstrap` accepts optional query `locale`
+- all API routes may also receive `X-WorldWeaver-Locale`
+- when explicit locale is missing, the API may fall back to `Accept-Language`
+- invalid or unknown locale input resolves to default locale `en`
+
+Priority order:
+
+1. explicit route-level locale input such as `/api/bootstrap?locale=zh-CN`
+2. `X-WorldWeaver-Locale`
+3. `Accept-Language`
+4. default locale `en`
+
+#### Locale-Aware Scaffold Content
+
+Locale-aware scaffold strings live in `packages/config/src/api-copy.ts`.
+
+These include:
+
+- success envelope messages such as `ok`, `queued`, and `created`
+- draft placeholder text and outline items
+- refinement placeholder text
+- default localized session title
+- placeholder assistant reply
+
+The API must not hardcode route-local user-facing scaffold strings directly inside route handlers.
 
 #### Environment Keys
 
@@ -138,12 +180,18 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 
 | Trigger | Boundary | Expected Outcome |
 |--------|----------|------------------|
+| `/api/bootstrap?locale=zh-CN` | `bootstrapCatalogQuerySchema` + `getRequestLocale()` | Returns Chinese `project_name`, service summaries, route purposes, job triggers, and success message |
+| `X-WorldWeaver-Locale: zh-CN` on scaffold route | `getRequestLocale()` | Returns Chinese scaffold payload and success envelope message |
+| No locale query or locale header | `resolveLocale()` | Route falls back to default locale `en` |
+| Unknown locale such as `fr-FR` | `resolveLocale()` | Route falls back to `en` instead of throwing |
 | `.env.local` contains a local override such as `POSTGRES_URL` | `loadLocalRuntimeEnv()` | API and worker use the `.env.local` value during local startup |
 | `.env.local` omits a key but `.env` contains it | `loadLocalRuntimeEnv()` | Startup falls back to the `.env` value |
 | Shell env already defines a key such as `API_PORT` | `loadEnvFile()` behavior | Existing `process.env` value stays unchanged |
 | Valid request body | `parseBody()` | Route continues with typed `body` |
+| Valid query such as `locale=zh-CN` | `parseQuery()` | Route continues with typed `query` |
+| Invalid query such as `locale=jp` | `parseQuery()` | HTTP `400` with `message: "validation_error"` and flattened `issues` |
 | Invalid request body | `parseBody()` | HTTP `400` with `message: "validation_error"` and flattened `issues` |
-| Missing optional field `title` in session create | `createSessionRequestSchema` | Accepted, route uses `"New Session"` fallback |
+| Missing optional field `title` in session create | `createSessionRequestSchema` + locale-aware copy | Accepted, route uses localized fallback title such as `"New Session"` or `"新会话"` |
 | Invalid env type such as non-numeric `API_PORT` | `envSchema.parse(process.env)` | Startup throws before service begins listening |
 | Successful route handler | `success()` helper | HTTP `200` with envelope containing `request_id` |
 | Fastify startup failure | `start()` catch in `server.ts` | `app.log.error(error)` then `process.exit(1)` |
@@ -152,6 +200,10 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 
 #### Good
 
+- Add a new locale-aware scaffold string in `packages/config/src/api-copy.ts`
+- Resolve request locale once in the route through `getRequestLocale(request, query?.locale)`
+- Parse route query through `parseQuery()` when locale is accepted on query string
+- Parse localized response payload with the matching schema before returning
 - Add a new request field in `packages/contracts/src/mvp.ts`
 - Import that schema into `apps/api/src/routes/*.ts`
 - Validate through `parseBody()`
@@ -162,11 +214,15 @@ These live in `packages/config/src/jobs.ts` and must stay synchronized with any 
 #### Base
 
 - A scaffold endpoint may return placeholder data
+- Placeholder data may vary by locale
 - Placeholder data must still be parsed by the matching response schema before returning
 - API and worker may use shared defaults from `packages/config/src/env.ts` when neither `.env.local` nor `.env` provides a key
 
 #### Bad
 
+- Hardcode user-facing scaffold copy directly in `apps/api/src/routes/*.ts`
+- Read locale headers ad hoc in each route instead of using `apps/api/src/lib/locale.ts`
+- Accept query input on `/api/bootstrap` without validating it through `bootstrapCatalogQuerySchema`
 - Define route-local payload types in `apps/api/src/routes/*.ts`
 - Return raw JSON without `success()`
 - Duplicate shared defaults in `apps/api/src/lib/env.ts` and `apps/worker/src/env.ts`
@@ -186,6 +242,9 @@ pnpm build
 
 When automated route tests are added, assert at least:
 
+- `/api/bootstrap?locale=en` and `/api/bootstrap?locale=zh-CN` both return schema-valid data
+- scaffold route responses change localized copy when `X-WorldWeaver-Locale` changes
+- invalid bootstrap locale query returns HTTP `400`
 - valid bodies reach the success path
 - invalid bodies return HTTP `400`
 - all success responses include `request_id`
@@ -211,8 +270,42 @@ app.post("/api/example", async (request) => {
 #### Correct
 
 ```ts
+app.get("/bootstrap", async (request, reply) => {
+  const query = parseQuery(
+    bootstrapCatalogQuerySchema,
+    request.query,
+    reply,
+    request.id,
+  )
+
+  if (!query) {
+    return
+  }
+
+  const locale = getRequestLocale(request, query.locale)
+  const copy = getApiScaffoldCopy(locale)
+
+  const data = bootstrapCatalogResponseSchema.parse({
+    ...getBootstrapSummary(locale),
+    api_routes: getApiRouteCatalog(locale),
+    worker_jobs: getWorkerJobCatalog(locale),
+  })
+
+  return success(data, request.id, copy.envelopeMessages.ok)
+})
+```
+
+```ts
 app.post("/worlds/commit", async (request, reply) => {
-  const body = parseBody(commitWorldRequestSchema, request.body, reply, request.id)
+  const locale = getRequestLocale(request)
+  const copy = getApiScaffoldCopy(locale)
+
+  const body = parseBody(
+    commitWorldRequestSchema,
+    request.body,
+    reply,
+    request.id,
+  )
 
   if (!body) {
     return
@@ -224,7 +317,7 @@ app.post("/worlds/commit", async (request, reply) => {
     queued_jobs: ["draft_commit_extraction", "embedding_sync"],
   })
 
-  return success(data, request.id, "queued")
+  return success(data, request.id, copy.envelopeMessages.queued)
 })
 ```
 

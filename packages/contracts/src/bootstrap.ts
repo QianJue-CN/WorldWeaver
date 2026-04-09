@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+export const appLocaleSchema = z.enum(["en", "zh-CN"])
 export const serviceIdSchema = z.enum(["web", "api", "worker"])
 export const roadmapStageSchema = z.enum(["foundation", "mvp", "next"])
 
@@ -23,6 +24,18 @@ export const infrastructureTargetSchema = z.object({
   connection_env: z.array(z.string().min(1)).min(1),
 })
 
+export const apiRouteDescriptorSchema = z.object({
+  method: z.enum(["GET", "POST"]),
+  path: z.string().min(1),
+  purpose: z.string().min(1),
+})
+
+export const workerJobDescriptorSchema = z.object({
+  id: z.string().min(1),
+  trigger: z.string().min(1),
+  summary: z.string().min(1),
+})
+
 export const bootstrapSummarySchema = z.object({
   project_name: z.string().min(1),
   product_intent: z.string().min(1),
@@ -31,4 +44,18 @@ export const bootstrapSummarySchema = z.object({
   infrastructure: z.array(infrastructureTargetSchema).min(1),
 })
 
+export const bootstrapCatalogQuerySchema = z.object({
+  locale: appLocaleSchema.optional(),
+})
+
+export const bootstrapCatalogResponseSchema = bootstrapSummarySchema.extend({
+  api_routes: z.array(apiRouteDescriptorSchema).min(1),
+  worker_jobs: z.array(workerJobDescriptorSchema).min(1),
+})
+
 export type BootstrapSummary = z.infer<typeof bootstrapSummarySchema>
+export type AppLocale = z.infer<typeof appLocaleSchema>
+export type BootstrapCatalogQuery = z.infer<typeof bootstrapCatalogQuerySchema>
+export type BootstrapCatalogResponse = z.infer<
+  typeof bootstrapCatalogResponseSchema
+>

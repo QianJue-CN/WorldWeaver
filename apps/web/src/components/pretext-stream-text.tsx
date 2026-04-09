@@ -3,7 +3,7 @@
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext"
 import { useEffect, useRef, useState } from "react"
 
-const font = '500 16px "Chakra Petch"'
+const font = '500 16px "Chakra Petch", "Noto Sans SC", sans-serif'
 const lineHeight = 30
 
 type StreamLine = {

@@ -61,9 +61,15 @@ When frontend API calls are introduced, prefer one of these:
 
 ### Current Example
 
-The frontend already consumes typed readonly metadata from `@worldweaver/config` in `apps/web/src/app/page.tsx`.
+The frontend now consumes typed readonly fallback metadata from `@worldweaver/config` and typed runtime API metadata through `apps/web/src/lib/api.ts`.
 
-That is the preferred pattern for any cross-layer display data.
+Current example:
+
+- `apps/web/src/components/worldweaver-home.tsx` builds a fallback catalog from `getBootstrapSummary(locale)`, `getApiRouteCatalog(locale)`, and `getWorkerJobCatalog(locale)`
+- `apps/web/src/lib/api.ts` fetches `/api/bootstrap?locale=...`
+- the response is parsed with `bootstrapCatalogResponseSchema`
+
+That is the preferred pattern for any cross-layer display data that has both a local fallback and a runtime API source.
 
 ---
 
@@ -111,13 +117,16 @@ import { bootstrapSummary } from "../../../packages/config/src/services"
 ### Good
 
 - import shared metadata from `@worldweaver/config`
+- parse `/api/bootstrap` through `bootstrapCatalogResponseSchema` before rendering
 - reuse shared contract types when building future API clients
 
 ### Base
 
 - route-local view helpers are acceptable if they are purely presentational
+- localized fallback builders are acceptable when they only compose shared config and shared contracts
 
 ### Bad
 
 - redefine `queued_jobs` or endpoint paths in UI code
 - create local copies of API response shapes because the page only needs one field today
+- fetch locale-aware platform data without passing through shared contract parsing

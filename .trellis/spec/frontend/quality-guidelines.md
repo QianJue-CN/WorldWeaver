@@ -57,15 +57,14 @@ Global visual tokens should be defined once in `globals.css` and reused through 
 
 ### Pattern: Shared Source of Truth for Cross-Layer Metadata
 
-`apps/web/src/app/page.tsx` imports:
+`apps/web/src/components/worldweaver-home.tsx` now composes metadata from two approved sources:
 
-- `bootstrapSummary`
-- `apiRouteCatalog`
-- `workerJobCatalog`
+- locale-aware fallback data from `@worldweaver/config`
+- runtime bootstrap sync through `/api/bootstrap`
 
-from `@worldweaver/config`.
+The API client in `apps/web/src/lib/api.ts` parses the runtime response with the shared bootstrap schema before rendering.
 
-Follow the same pattern for any metadata also used by API or worker.
+Follow the same pattern for any metadata also used by API or worker: shared fallback in workspace packages, typed runtime sync through shared contracts.
 
 ### Pattern: Responsive Layout Must Be Present from the First Version
 
@@ -100,6 +99,7 @@ When editing UI:
 - verify the page at mobile and desktop widths
 - confirm no broken shared package imports
 - confirm content still renders without client-side hooks
+- confirm locale switch updates both local fallback copy and `/api/bootstrap` synchronized data
 
 ### Future Requirement
 
