@@ -6,7 +6,15 @@
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+These documents describe the current backend conventions for the WorldWeaver scaffold.
+
+The repository is a `pnpm` monorepo with three backend-facing areas:
+
+- `apps/api` for the Fastify HTTP service
+- `apps/worker` for async job processing bootstrap code
+- `packages/contracts` and `packages/config` for cross-layer contracts and shared defaults
+
+For backend work that changes any request shape, env key, or worker-visible contract, read `http-contracts.md` first.
 
 ---
 
@@ -14,24 +22,21 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Directory Structure](./directory-structure.md) | Module organization and file layout | Updated |
+| [HTTP Contracts](./http-contracts.md) | Executable API, env, and cross-layer scaffold contracts | Updated |
+| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | Pending persistence layer |
+| [Error Handling](./error-handling.md) | Error types, handling strategies | Updated |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Updated |
+| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | Updated |
 
 ---
 
-## How to Fill These Guidelines
+## Reading Order
 
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+1. `http-contracts.md` for API or worker boundary changes
+2. `directory-structure.md` before creating new backend files
+3. `error-handling.md` and `logging-guidelines.md` before adding new runtime behavior
+4. `quality-guidelines.md` before finishing a backend task
 
 ---
 

@@ -6,7 +6,23 @@
 
 ## Overview
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+These documents describe the current frontend conventions for the WorldWeaver scaffold.
+
+The frontend currently consists of a single Next.js App Router app under `apps/web`, backed by shared catalogs in `@worldweaver/config`. Shared request and response contracts live in `@worldweaver/contracts` and should be treated as the future API client source of truth.
+
+## Required Skill Usage
+
+For this project, any task focused on frontend UI or UX must use `.agents/skills/ui-ux-pro-max/SKILL.md` before implementation.
+
+This requirement applies to:
+
+- New page or screen design
+- UI redesign or visual polish
+- Layout and interaction changes
+- Component styling work
+- UI-focused review or improvement tasks
+
+Use the skill output as a required input for visual direction, design system decisions, typography, color palette, interaction patterns, responsive behavior, and accessibility checks.
 
 ---
 
@@ -14,25 +30,21 @@ This directory contains guidelines for frontend development. Fill in each file w
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+| [Directory Structure](./directory-structure.md) | Module organization and file layout | Updated |
+| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | Pending first reusable component set |
+| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | Pending first client data flow |
+| [State Management](./state-management.md) | Local state, global state, server state | Pending first interactive state layer |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Updated |
+| [Type Safety](./type-safety.md) | Type patterns, validation | Updated |
 
 ---
 
-## How to Fill These Guidelines
+## Reading Order
 
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+1. `directory-structure.md` before adding new frontend files
+2. `type-safety.md` when consuming shared contracts or catalogs
+3. `quality-guidelines.md` before finishing UI work
+4. `component-guidelines.md`, `hook-guidelines.md`, and `state-management.md` once those layers exist in code
 
 ---
 

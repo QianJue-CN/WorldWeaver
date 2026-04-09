@@ -58,6 +58,10 @@ grep -r "keyword" .
 
 **Good**: Single source of truth, import everywhere
 
+Project-specific examples:
+- API route catalogs belong in `packages/config/src/jobs.ts` or another shared config module, not in both API and web files
+- Shared local env defaults belong in `packages/config/src/env.ts`, not duplicated in API and worker env modules
+
 ---
 
 ## When to Abstract

@@ -1,0 +1,26 @@
+{
+  "name": "worldweaver-rpg",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=22.21.0",
+    "pnpm": ">=10.30.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "build:shared": "pnpm --filter @worldweaver/contracts build && pnpm --filter @worldweaver/config build",
+    "check": "pnpm lint && pnpm typecheck",
+    "dev:api": "pnpm build:shared && pnpm --filter @worldweaver/api dev",
+    "dev:web": "pnpm build:shared && pnpm --filter @worldweaver/web dev",
+    "dev:worker": "pnpm build:shared && pnpm --filter @worldweaver/worker dev",
+    "lint": "pnpm exec biome check .",
+    "typecheck": "pnpm --filter @worldweaver/contracts typecheck && pnpm --filter @worldweaver/config typecheck && pnpm build:shared && pnpm --filter @worldweaver/api typecheck && pnpm --filter @worldweaver/web typecheck && pnpm --filter @worldweaver/worker typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

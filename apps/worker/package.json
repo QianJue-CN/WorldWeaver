@@ -1,0 +1,17 @@
+{
+  "name": "@worldweaver/worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "lint": "biome check src package.json tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@worldweaver/config": "workspace:*",
+    "zod": "^4.3.6"
+  }
+}

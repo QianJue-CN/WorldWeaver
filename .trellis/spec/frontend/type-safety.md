@@ -6,46 +6,118 @@
 
 ## Overview
 
-<!--
-Document your project's type safety conventions here.
+The frontend uses strict TypeScript from the workspace root and consumes cross-layer data through shared packages.
 
-Questions to answer:
-- What type system do you use?
-- How are types organized?
-- What validation library do you use?
-- How do you handle type inference?
--->
+Current sources of truth:
 
-(To be filled by the team)
+- `@worldweaver/contracts` for request and response schemas
+- `@worldweaver/config` for shared catalogs, metadata, and local defaults
+
+The frontend does not own API payload definitions locally.
 
 ---
 
 ## Type Organization
 
-<!-- Where types are defined, shared types vs local types -->
+### Shared Types
 
-(To be filled by the team)
+Cross-layer contract types belong in `packages/contracts/src`.
+
+Examples:
+
+- `DraftGenerateRequest`
+- `CommitWorldResponse`
+- `ApiEnvelope<T>`
+
+### Shared Readonly Metadata
+
+Platform metadata intended for display belongs in `packages/config/src` and should usually be exported with `as const`.
+
+Examples:
+
+- `bootstrapSummary`
+- `apiRouteCatalog`
+- `workerJobCatalog`
+- `localServiceDefaults`
+
+### Frontend-Local Types
+
+Frontend-local types are acceptable when they describe rendering concerns that do not cross the API boundary.
+
+Do not create frontend-local types for server payloads that already exist in `@worldweaver/contracts`.
 
 ---
 
 ## Validation
 
-<!-- Runtime validation patterns (Zod, Yup, io-ts, etc.) -->
+### Current Boundary Rule
 
-(To be filled by the team)
+The backend owns runtime request validation today through Zod and `parseBody()`.
+
+When frontend API calls are introduced, prefer one of these:
+
+1. parse server responses with shared schemas from `@worldweaver/contracts`
+2. build a typed API client whose request and response generics come from those shared schemas
+
+### Current Example
+
+The frontend already consumes typed readonly metadata from `@worldweaver/config` in `apps/web/src/app/page.tsx`.
+
+That is the preferred pattern for any cross-layer display data.
 
 ---
 
 ## Common Patterns
 
-<!-- Type utilities, generics, type guards -->
+### Pattern: Use `as const` for Display Catalogs
 
-(To be filled by the team)
+This preserves literal values for stage labels, route catalogs, and job identifiers.
+
+### Pattern: Use Framework Types at Boundaries
+
+Examples already in the codebase:
+
+- `Metadata` in `layout.tsx`
+- `Readonly<{ children: ReactNode }>` for layout props
+
+### Pattern: Keep Shared Imports Package-Based
+
+Good:
+
+```ts
+import { bootstrapSummary } from "@worldweaver/config"
+```
+
+Bad:
+
+```ts
+import { bootstrapSummary } from "../../../packages/config/src/services"
+```
 
 ---
 
 ## Forbidden Patterns
 
-<!-- any, type assertions, etc. -->
+- `any`
+- `as unknown as`
+- duplicated request or response types in UI code
+- relative imports into sibling workspace package source
+- hand-written string unions that already exist in shared contracts or config
 
-(To be filled by the team)
+---
+
+## Good / Base / Bad Cases
+
+### Good
+
+- import shared metadata from `@worldweaver/config`
+- reuse shared contract types when building future API clients
+
+### Base
+
+- route-local view helpers are acceptable if they are purely presentational
+
+### Bad
+
+- redefine `queued_jobs` or endpoint paths in UI code
+- create local copies of API response shapes because the page only needs one field today

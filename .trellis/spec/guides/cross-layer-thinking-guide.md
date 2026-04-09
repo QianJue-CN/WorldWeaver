@@ -45,6 +45,7 @@ For each boundary:
 - What is the exact input format?
 - What is the exact output format?
 - What errors can occur?
+- Is there already a shared contract or shared default in `packages/contracts` or `packages/config` that should remain the source of truth?
 
 ---
 
@@ -77,6 +78,7 @@ Before implementation:
 - [ ] Identified all layer boundaries
 - [ ] Defined format at each boundary
 - [ ] Decided where validation happens
+- [ ] Checked whether payload shapes or shared defaults already exist in a workspace package
 
 After implementation:
 - [ ] Tested with edge cases (null, empty, invalid)
