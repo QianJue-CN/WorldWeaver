@@ -58,3 +58,54 @@ Initialized the WorldWeaver monorepo scaffold, codified executable Trellis specs
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Ship the WorldWeaver local control center MVP
+
+**Date**: 2026-04-09
+**Task**: Ship the WorldWeaver local control center MVP
+
+### Summary
+
+Delivered the first interactive WorldWeaver web control center, aligned runtime env and health contracts, and archived the completed continue-web-development task.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Web MVP | Replaced the scaffold landing page with a single-page WorldWeaver control center for draft generation, refinement, world commit, session creation, and chat send flows. |
+| UI System | Added a more intentional AI-native RPG visual system with responsive panels and pretext-driven text treatment for the local console experience. |
+| Typed Client | Introduced a typed API helper in `apps/web` that reads `NEXT_PUBLIC_API_BASE_URL`, validates responses with shared contracts, and keeps async request state visible in the UI. |
+| Runtime Contracts | Centralized `.env.local` runtime loading for API and worker, added a shared health schema, and validated health responses before returning them. |
+| Task Tracking | Captured the continue-web-development PRD and context files in Trellis, then archived the completed task after the feature commit landed. |
+
+**Verification**:
+- Recorded after the human tested and committed the local MVP.
+- Covered the key local workflows: health check, draft generate/refine, world commit, session creation, and chat send.
+
+**Task Status**:
+- Archived `04-09-continue-web-development` after implementation and hand testing.
+- Left `00-bootstrap-guidelines` active because several project spec guides are still intentionally pending.
+
+**Key Outcomes**:
+- The repository now has a usable in-browser integration surface instead of a static scaffold page.
+- Shared runtime env loading and health response validation reduce cross-layer drift during local development.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `40bef3b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
