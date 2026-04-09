@@ -163,3 +163,63 @@ Completed the English and Simplified Chinese localization pass across shared con
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Ship configurable AI providers, embeddings, and provider settings
+
+**Date**: 2026-04-10
+**Task**: Ship configurable AI providers, embeddings, and provider settings
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| API Providers | Added a provider registry, OpenAI-compatible client, Gemini client, Anthropic client, and mock fallback under `apps/api/src/ai`, then routed draft generation, refinement, chat, and embedding work through the new AI gateway. |
+| Provider Settings | Added player-scoped provider configuration CRUD in the API plus a new provider settings panel in the web control center for saving, editing, deleting, switching, and defaulting provider services. |
+| Local Retrieval | Persisted local embeddings and embedding job records in API state, then used similarity-based retrieval to inject relevant world/session context into chat generation. |
+| Shared Contracts | Extended `packages/contracts` and `packages/config` with provider metadata, provider settings schemas, bootstrap provider catalog data, env defaults, and localized settings copy. |
+| Docs and Planning | Updated README, architecture notes, backend/frontend Trellis specs, and added `docs/development-roadmap.md` to capture pending work and phased follow-up plans. |
+
+**Verification**:
+- `corepack pnpm --config.engine-strict=false lint`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/api test`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/contracts typecheck`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/config typecheck`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/api typecheck`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/web typecheck`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/worker typecheck`
+- `corepack pnpm --config.engine-strict=false -r --if-present build`
+
+**Task Status**:
+- Archived `04-10-continue-overall-development` after the backend statefulness and follow-up planning work landed.
+- Archived `04-10-integrate-ai-providers` after multi-provider integration, provider settings UI, tests, and docs were committed.
+- Left `00-bootstrap-guidelines` active because it remains the long-running baseline spec task.
+
+**Key Outcomes**:
+- Players can now configure OpenAI-compatible, Gemini, and Anthropic-style provider services from the local settings UI.
+- The API now performs real provider-backed text generation and embedding generation instead of scaffold prose for the main world/session loop.
+- The repository now has a concrete roadmap document for the next development phases: secure secret storage, worker-owned embedding sync, search integration, and product-surface split.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `371b51d` | (see git log) |
+| `c23a6da` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
