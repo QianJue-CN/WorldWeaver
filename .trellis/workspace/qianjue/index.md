@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 2
-- **Last Active**: 2026-04-09
+- **Total Sessions**: 3
+- **Last Active**: 2026-04-10
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~111 | Active |
+| `journal-1.md` | ~165 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 3 | 2026-04-10 | Ship bilingual i18n across the WorldWeaver local stack | `8aa4d16` |
 | 2 | 2026-04-09 | Ship the WorldWeaver local control center MVP | `40bef3b` |
 | 1 | 2026-04-09 | Initialize WorldWeaver scaffold and executable specs | `c978f06` |
 <!-- @@@/auto:session-history -->

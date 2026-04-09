@@ -109,3 +109,57 @@ Delivered the first interactive WorldWeaver web control center, aligned runtime 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Ship bilingual i18n across the WorldWeaver local stack
+
+**Date**: 2026-04-10
+**Task**: Ship bilingual i18n across the WorldWeaver local stack
+
+### Summary
+
+Completed the English and Simplified Chinese localization pass across shared config, contracts, API scaffold responses, and the local web control center.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Shared Locale Layer | Added shared locale definitions plus bilingual copy catalogs for the web console and API scaffold responses, keeping English as the stable default export for existing consumers. |
+| Web Console | Added a persisted English/Simplified Chinese language switcher, localized the homepage and control center, and synced platform catalog data from `/api/bootstrap` with shared fallback data. |
+| API + Contracts | Extended bootstrap contracts with locale-aware query and response schemas, added request locale resolution, localized scaffold responses for health/bootstrap/MVP routes, and improved slug generation for Chinese input. |
+| Trellis Specs | Updated frontend and backend code-spec docs to document locale negotiation, bootstrap sync, shared fallback rules, and cross-layer validation requirements. |
+
+**Verification**:
+- `corepack pnpm exec biome check apps/api/src apps/web/src packages`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/api typecheck`
+- `corepack pnpm --config.engine-strict=false --filter @worldweaver/web typecheck`
+- `corepack pnpm --config.engine-strict=false -r --if-present build`
+- Smoke-checked `/api/bootstrap?locale=en` and `/api/bootstrap?locale=zh-CN`, plus localized draft/session/chat scaffold responses.
+
+**Task Status**:
+- Archived `04-09-continue-web-bilingual-i18n` after the feature commit landed and local verification completed.
+- Left `00-bootstrap-guidelines` active because several future-facing spec placeholders are still intentionally pending.
+
+**Key Outcomes**:
+- Locale now flows cleanly through `packages/config` -> `packages/contracts` -> `apps/api` -> `apps/web`.
+- English and Simplified Chinese now cover homepage copy, control-center UX, bootstrap sync data, and scaffold API response content.
+- Chinese prompts now generate stable IDs without collapsing to the old generic fallback slug.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8aa4d16` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
